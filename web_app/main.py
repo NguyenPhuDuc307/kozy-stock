@@ -57,6 +57,10 @@ def main():
         """Portfolio management page function for st.Page"""
         exec(open("web_app/pages/portfolio_management.py").read())
     
+    def portfolio_tracking_page():
+        """Portfolio tracking page function for st.Page"""
+        exec(open("web_app/pages/portfolio_tracking.py").read())
+    
     # Create pages using st.Page
     pages = {
         "Trang chủ": [
@@ -69,6 +73,7 @@ def main():
         ],
         "Trading": [
             st.Page(backtest_page, title="Backtest chiến lược", icon="🔄"),
+            st.Page(portfolio_tracking_page, title="Theo dõi danh mục", icon="📊"),
         ],
         "Quản lý": [
             st.Page(portfolio_management_page, title="Quản lý danh mục", icon="📁"),

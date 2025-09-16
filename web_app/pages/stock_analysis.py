@@ -93,9 +93,7 @@ def render_stock_analysis_page():
         analyze_clicked = st.sidebar.button("📊 Phân tích", type="primary")
         
         # Hiển thị thông tin cơ bản mặc định
-        if not analyze_clicked:
-            st.info("💡 **Hướng dẫn:** Chọn mã cổ phiếu và thời gian, sau đó nhấn nút '📊 Phân tích' để xem biểu đồ và chỉ báo kỹ thuật chi tiết.")
-            
+        if not analyze_clicked:            
             # Hiển thị preview với dữ liệu cơ bản
             with st.spinner("Đang tải thông tin cơ bản..."):
                 try:
@@ -132,34 +130,7 @@ def render_stock_analysis_page():
                         with col4:
                             low_52w = df_preview['low'].min()
                             st.metric("📉 Thấp nhất (30 ngày)", f"{low_52w:,.0f} VND")
-                        
-                        st.markdown("---")
-                        st.markdown("### 📈 Biểu đồ giá 30 ngày gần nhất")
-                        
-                        # Simple price chart
-                        import plotly.graph_objects as go
-                        fig_simple = go.Figure()
-                        
-                        fig_simple.add_trace(
-                            go.Candlestick(
-                                x=df_preview.index,
-                                open=df_preview['open'],
-                                high=df_preview['high'],
-                                low=df_preview['low'],
-                                close=df_preview['close'],
-                                name=selected_symbol
-                            )
-                        )
-                        
-                        fig_simple.update_layout(
-                            title=f"Biểu đồ nến {selected_symbol} - 30 ngày gần nhất",
-                            xaxis_rangeslider_visible=False,
-                            height=400,
-                            template="plotly_white"
-                        )
-                        
-                        st.plotly_chart(fig_simple, use_container_width=True)
-                        
+                    
                 except Exception as e:
                     st.warning("⚠️ Không thể tải thông tin preview")
         
@@ -346,7 +317,7 @@ def render_stock_analysis_page():
                     # Simple date formatting - let Plotly handle it automatically
                     fig_price.update_xaxes(title_text="Thời gian", row=2, col=1)
                     
-                    st.plotly_chart(fig_price, use_container_width=True)
+                    st.plotly_chart(fig_price, width='stretch')
                     
                     # 2. RSI Chart
                     if 'rsi' in df_with_indicators.columns:
@@ -390,7 +361,7 @@ def render_stock_analysis_page():
                             margin=dict(r=150)
                         )
                         
-                        st.plotly_chart(fig_rsi, use_container_width=True)
+                        st.plotly_chart(fig_rsi, width='stretch')
                     
                     # 3. MACD Chart
                     if all(col in df_with_indicators.columns for col in ['macd', 'macd_signal', 'macd_histogram']):
@@ -451,7 +422,7 @@ def render_stock_analysis_page():
                             margin=dict(r=150)
                         )
                         
-                        st.plotly_chart(fig_macd, use_container_width=True)
+                        st.plotly_chart(fig_macd, width='stretch')
                     
                     # Technical Analysis Summary
                     st.subheader("📊 Bảng phân tích chỉ báo kỹ thuật")

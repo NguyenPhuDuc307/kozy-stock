@@ -463,7 +463,7 @@ def render_backtest_page():
                     showlegend=True
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 # Trade history
                 if trades:
@@ -475,7 +475,7 @@ def render_backtest_page():
                     trades_df['value'] = trades_df['value'].round(0)
                     trades_df['commission'] = trades_df['commission'].round(0)
                     
-                    st.dataframe(trades_df, use_container_width=True)
+                    st.dataframe(trades_df, width='stretch')
                 
                 # Strategy analysis
                 st.markdown("## 💡 Phân tích chiến lược")

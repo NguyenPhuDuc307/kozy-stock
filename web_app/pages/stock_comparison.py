@@ -193,7 +193,7 @@ def render_comparison_page():
                     hovermode='x unified'
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 # Performance metrics table
                 st.markdown("## 📊 Bảng so sánh chỉ số")
@@ -228,7 +228,7 @@ def render_comparison_page():
                     ]
                 })
                 
-                st.dataframe(metrics_df, use_container_width=True)
+                st.dataframe(metrics_df, width='stretch')
                 
                 # Correlation analysis
                 st.markdown("## 🔗 Phân tích tương quan")

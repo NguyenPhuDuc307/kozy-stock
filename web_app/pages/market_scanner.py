@@ -147,7 +147,7 @@ def render_market_scanner_page():
                                 # Sort by score
                                 display_df = display_df.sort_values('Overall_Score', ascending=False)
                                 
-                                st.dataframe(display_df, use_container_width=True)
+                                st.dataframe(display_df, width='stretch')
                                 
                                 # Top picks
                                 st.subheader("🏆 Top picks")

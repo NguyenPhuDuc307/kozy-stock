@@ -67,7 +67,7 @@ def render_portfolio_management():
                                         st.rerun()
         
         with tab2:
-            st.subheader("➕ Thêm danh mục mới")
+            st.subheader("📈 Thêm danh mục mới")
             
             with st.form("add_portfolio_form"):
                 portfolio_name = st.text_input("Tên danh mục:", placeholder="VD: Cổ phiếu nhỏ")

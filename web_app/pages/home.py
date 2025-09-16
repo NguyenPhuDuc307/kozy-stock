@@ -22,13 +22,6 @@ def render_home_page():
     
     st.markdown("# 🏠 Tổng quan thị trường")
     
-    # Header với thông tin tổng quan
-    st.markdown("""
-    ## 📊 Trạng thái thị trường hôm nay
-    
-    Theo dõi diễn biến các sàn giao dịch chứng khoán Việt Nam qua biểu đồ nến và thống kê tổng quan.
-    """)
-    
     try:
         # Import các thư viện cần thiết
         from datetime import datetime, timedelta
@@ -179,7 +172,7 @@ def render_home_page():
                     fig.update_layout(xaxis_rangeslider_visible=False)
                     
                     # Hiển thị biểu đồ
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                     
                     # Thông tin chi tiết
                     col1, col2, col3, col4 = st.columns(4)
@@ -225,8 +218,8 @@ def render_home_page():
                     return 'color: red'
                 return 'color: black'
             
-            styled_df = summary_df.style.applymap(color_change, subset=['Thay đổi (%)'])
-            st.dataframe(styled_df, use_container_width=True, hide_index=True)
+            styled_df = summary_df.style.map(color_change, subset=['Thay đổi (%)'])
+            st.dataframe(styled_df, width='stretch', hide_index=True)
             
     except ImportError:
         st.error("❌ Không thể import vnstock. Vui lòng cài đặt: `pip install vnstock`")
@@ -245,7 +238,7 @@ def render_home_page():
         }
         
         sample_df = pd.DataFrame(sample_data)
-        st.dataframe(sample_df, use_container_width=True, hide_index=True)
+        st.dataframe(sample_df, width='stretch', hide_index=True)
 
 # Main page function for st.Page  
 render_home_page()
