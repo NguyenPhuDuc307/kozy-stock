@@ -102,9 +102,10 @@ def render_backtest_page():
             min_value=10000000,
             max_value=10000000000,
             value=100000000,
-            step=10000000,
-            format="%d"
+            step=10000000
         )
+        # Hiển thị giá trị đã format để dễ đọc
+        st.caption(f"💰 **{initial_capital:,} VND**")
     
     with col2:
         position_size = st.slider(

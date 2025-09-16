@@ -205,22 +205,23 @@ def render_stock_analysis_page():
                             macd_diff = latest['macd'] - latest['macd_signal']
                             st.metric("📊 MACD", f"{latest['macd']:.3f}", delta=f"{macd_diff:+.3f}")
                     
-                    # Create advanced chart
-                    fig = make_subplots(
-                        rows=4, cols=1,
+                    # Create separate charts for better visualization
+                    
+                    # 1. Price Chart with Volume (2 subplots)
+                    st.subheader("📈 Biểu đồ giá và khối lượng")
+                    
+                    from plotly.subplots import make_subplots
+                    
+                    fig_price = make_subplots(
+                        rows=2, cols=1,
                         shared_xaxes=True,
-                        vertical_spacing=0.03,
-                        subplot_titles=(
-                            f'{selected_symbol} - Biểu đồ nến và chỉ báo kỹ thuật',
-                            'Khối lượng giao dịch',
-                            'RSI (14)',
-                            'MACD'
-                        ),
-                        row_heights=[0.5, 0.2, 0.15, 0.15]
+                        vertical_spacing=0.1,
+                        subplot_titles=('Giá cổ phiếu', 'Khối lượng giao dịch'),
+                        row_heights=[0.7, 0.3]
                     )
                     
-                    # 1. Candlestick chart
-                    fig.add_trace(
+                    # Candlestick chart
+                    fig_price.add_trace(
                         go.Candlestick(
                             x=df_with_indicators.index,
                             open=df_with_indicators['open'],
@@ -235,9 +236,9 @@ def render_stock_analysis_page():
                         row=1, col=1
                     )
                     
-                    # 2. Moving Averages
+                    # Moving Averages
                     if 'sma_20' in df_with_indicators.columns:
-                        fig.add_trace(
+                        fig_price.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['sma_20'],
@@ -249,7 +250,7 @@ def render_stock_analysis_page():
                         )
                     
                     if 'sma_50' in df_with_indicators.columns:
-                        fig.add_trace(
+                        fig_price.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['sma_50'],
@@ -260,9 +261,9 @@ def render_stock_analysis_page():
                             row=1, col=1
                         )
                     
-                    # 3. Bollinger Bands
+                    # Bollinger Bands
                     if all(col in df_with_indicators.columns for col in ['bb_upper', 'bb_lower']):
-                        fig.add_trace(
+                        fig_price.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['bb_upper'],
@@ -273,7 +274,7 @@ def render_stock_analysis_page():
                             row=1, col=1
                         )
                         
-                        fig.add_trace(
+                        fig_price.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['bb_lower'],
@@ -286,11 +287,11 @@ def render_stock_analysis_page():
                             row=1, col=1
                         )
                     
-                    # 4. Volume
+                    # Volume
                     colors = ['#26a69a' if close >= open else '#ef5350' 
                               for close, open in zip(df_with_indicators['close'], df_with_indicators['open'])]
                     
-                    fig.add_trace(
+                    fig_price.add_trace(
                         go.Bar(
                             x=df_with_indicators.index,
                             y=df_with_indicators['volume'],
@@ -302,92 +303,138 @@ def render_stock_analysis_page():
                         row=2, col=1
                     )
                     
-                    # 5. RSI
+                    # Update layout for price chart
+                    fig_price.update_layout(
+                        title=f"Giá cổ phiếu {selected_symbol} - {selected_period_name}",
+                        xaxis_rangeslider_visible=False,
+                        height=600,
+                        showlegend=True,
+                        legend=dict(
+                            orientation="v",  # Vertical legend
+                            yanchor="top",
+                            y=1,
+                            xanchor="left",
+                            x=1.02,  # Position to the right
+                            bgcolor="rgba(255,255,255,0.9)",
+                            bordercolor="rgba(0,0,0,0.5)",
+                            borderwidth=1
+                        ),
+                        template="plotly_white",
+                        margin=dict(r=150)  # Right margin for legend
+                    )
+                    
+                    fig_price.update_yaxes(title_text="Giá (VND)", row=1, col=1)
+                    fig_price.update_yaxes(title_text="Khối lượng", row=2, col=1)
+                    
+                    # Simple date formatting - let Plotly handle it automatically
+                    fig_price.update_xaxes(title_text="Thời gian", row=2, col=1)
+                    
+                    st.plotly_chart(fig_price, use_container_width=True)
+                    
+                    # 2. RSI Chart
                     if 'rsi' in df_with_indicators.columns:
-                        fig.add_trace(
+                        st.subheader("📊 Chỉ số RSI")
+                        
+                        fig_rsi = go.Figure()
+                        
+                        fig_rsi.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['rsi'],
+                                mode='lines',
                                 name='RSI',
-                                showlegend=True,
-                                line=dict(color='purple', width=2)
-                            ),
-                            row=3, col=1
+                                line=dict(color='purple', width=2),
+                                showlegend=True
+                            )
                         )
                         
-                        # RSI levels
-                        fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1, opacity=0.7)
-                        fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1, opacity=0.7)
-                        fig.add_hline(y=50, line_dash="dot", line_color="gray", row=3, col=1, opacity=0.5)
+                        # Add RSI reference lines
+                        fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", 
+                                         annotation_text="Overbought (70)")
+                        fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", 
+                                         annotation_text="Oversold (30)")
+                        fig_rsi.add_hline(y=50, line_dash="dot", line_color="gray", 
+                                         annotation_text="Neutral (50)")
+                        
+                        fig_rsi.update_layout(
+                            title=f"RSI - {selected_symbol}",
+                            height=300,
+                            yaxis=dict(title="RSI", range=[0, 100]),
+                            xaxis=dict(title="Thời gian"),
+                            template="plotly_white",
+                            showlegend=True,
+                            legend=dict(
+                                orientation="v",
+                                yanchor="top",
+                                y=1,
+                                xanchor="left",
+                                x=1.02
+                            ),
+                            margin=dict(r=150)
+                        )
+                        
+                        st.plotly_chart(fig_rsi, use_container_width=True)
                     
-                    # 6. MACD
+                    # 3. MACD Chart
                     if all(col in df_with_indicators.columns for col in ['macd', 'macd_signal', 'macd_histogram']):
-                        fig.add_trace(
+                        st.subheader("📈 Chỉ số MACD")
+                        
+                        fig_macd = go.Figure()
+                        
+                        # MACD line
+                        fig_macd.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['macd'],
+                                mode='lines',
                                 name='MACD',
-                                showlegend=True,
-                                line=dict(color='blue', width=2)
-                            ),
-                            row=4, col=1
+                                line=dict(color='blue', width=2),
+                                showlegend=True
+                            )
                         )
                         
-                        fig.add_trace(
+                        # Signal line
+                        fig_macd.add_trace(
                             go.Scatter(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['macd_signal'],
+                                mode='lines',
                                 name='Signal',
-                                showlegend=True,
-                                line=dict(color='red', width=2)
-                            ),
-                            row=4, col=1
+                                line=dict(color='red', width=2),
+                                showlegend=True
+                            )
                         )
                         
-                        # MACD Histogram
-                        colors_macd = ['green' if val >= 0 else 'red' for val in df_with_indicators['macd_histogram']]
-                        fig.add_trace(
+                        # Histogram
+                        fig_macd.add_trace(
                             go.Bar(
                                 x=df_with_indicators.index,
                                 y=df_with_indicators['macd_histogram'],
-                                marker_color=colors_macd,
-                                name="MACD Histogram",
-                                showlegend=True,
-                                opacity=0.6
-                            ),
-                            row=4, col=1
+                                name='Histogram',
+                                marker_color='gray',
+                                opacity=0.6,
+                                showlegend=True
+                            )
                         )
-                    
-                    # Update layout with legend at bottom
-                    fig.update_layout(
-                        title=f"Phân tích kỹ thuật {selected_symbol} - {selected_period_name}",
-                        xaxis_rangeslider_visible=False,
-                        height=1100,  # Increase height for bottom legend
-                        showlegend=True,
-                        legend=dict(
-                            orientation="h",  # Horizontal legend
-                            yanchor="top",
-                            y=-0.05,  # Position below the chart
-                            xanchor="center",
-                            x=0.5,
-                            bgcolor="rgba(255,255,255,0.9)",
-                            bordercolor="rgba(0,0,0,0.5)",
-                            borderwidth=1,
-                            font=dict(size=12)
-                        ),
-                        template="plotly_white",
-                        margin=dict(r=50, l=50, t=80, b=100)  # Bottom margin for legend
-                    )
-                    
-                    # Update y-axis
-                    fig.update_yaxes(title_text="Giá (VND)", row=1, col=1)
-                    fig.update_yaxes(title_text="Khối lượng", row=2, col=1)
-                    if 'rsi' in df_with_indicators.columns:
-                        fig.update_yaxes(title_text="RSI", row=3, col=1, range=[0, 100])
-                    fig.update_yaxes(title_text="MACD", row=4, col=1)
-                    fig.update_xaxes(title_text="Thời gian", row=4, col=1)
-                    
-                    st.plotly_chart(fig, use_container_width=True)
+                        
+                        fig_macd.update_layout(
+                            title=f"MACD - {selected_symbol}",
+                            height=300,
+                            yaxis=dict(title="MACD"),
+                            xaxis=dict(title="Thời gian"),
+                            template="plotly_white",
+                            showlegend=True,
+                            legend=dict(
+                                orientation="v",
+                                yanchor="top",
+                                y=1,
+                                xanchor="left",
+                                x=1.02
+                            ),
+                            margin=dict(r=150)
+                        )
+                        
+                        st.plotly_chart(fig_macd, use_container_width=True)
                     
                     # Technical Analysis Summary
                     st.subheader("📊 Bảng phân tích chỉ báo kỹ thuật")
@@ -401,20 +448,20 @@ def render_stock_analysis_page():
                         # Moving Averages - ưu tiên chỉ báo phù hợp với thời gian
                         if 'sma_5' in latest and 'sma_10' in latest and pd.notna(latest['sma_5']) and pd.notna(latest['sma_10']):
                             ma_signal = "Tăng" if latest['sma_5'] > latest['sma_10'] else "Giảm"
-                            trend_data.append(["SMA 5/10", f"{latest['sma_5']:.0f}/{latest['sma_10']:.0f}", ma_signal])
+                            trend_data.append(["SMA 5/10", f"{latest['sma_5']:,.0f}/{latest['sma_10']:,.0f}", ma_signal])
                         
                         if 'sma_10' in latest and 'sma_20' in latest and pd.notna(latest['sma_10']) and pd.notna(latest['sma_20']):
                             ma_signal = "Tăng" if latest['sma_10'] > latest['sma_20'] else "Giảm"
-                            trend_data.append(["SMA 10/20", f"{latest['sma_10']:.0f}/{latest['sma_20']:.0f}", ma_signal])
+                            trend_data.append(["SMA 10/20", f"{latest['sma_10']:,.0f}/{latest['sma_20']:,.0f}", ma_signal])
                         
                         # EMA cho thời gian ngắn
                         if 'ema_5' in latest and 'ema_10' in latest and pd.notna(latest['ema_5']) and pd.notna(latest['ema_10']):
                             ema_signal = "Tăng" if latest['ema_5'] > latest['ema_10'] else "Giảm"
-                            trend_data.append(["EMA 5/10", f"{latest['ema_5']:.0f}/{latest['ema_10']:.0f}", ema_signal])
+                            trend_data.append(["EMA 5/10", f"{latest['ema_5']:,.0f}/{latest['ema_10']:,.0f}", ema_signal])
                         
                         if 'ema_12' in latest and 'ema_20' in latest and pd.notna(latest['ema_12']) and pd.notna(latest['ema_20']):
                             ema_signal = "Tăng" if latest['ema_12'] > latest['ema_20'] else "Giảm"
-                            trend_data.append(["EMA 12/20", f"{latest['ema_12']:.0f}/{latest['ema_20']:.0f}", ema_signal])
+                            trend_data.append(["EMA 12/20", f"{latest['ema_12']:,.0f}/{latest['ema_20']:,.0f}", ema_signal])
                         
                         # MACD (nếu có)
                         if 'macd' in latest and 'macd_signal' in latest and pd.notna(latest['macd']) and pd.notna(latest['macd_signal']):
