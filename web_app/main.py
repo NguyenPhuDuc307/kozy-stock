@@ -49,6 +49,10 @@ def main():
         """Backtest page function for st.Page"""
         exec(open("web_app/pages/backtest.py").read())
     
+    def portfolio_management_page():
+        """Portfolio management page function for st.Page"""
+        exec(open("web_app/pages/portfolio_management.py").read())
+    
     # Create pages using st.Page
     pages = {
         "Phân tích": [
@@ -58,6 +62,9 @@ def main():
         ],
         "Trading": [
             st.Page(backtest_page, title="Backtest chiến lược", icon="🔄"),
+        ],
+        "Quản lý": [
+            st.Page(portfolio_management_page, title="Quản lý danh mục", icon="📁"),
         ]
     }
     

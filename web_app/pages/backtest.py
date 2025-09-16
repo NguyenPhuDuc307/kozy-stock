@@ -19,6 +19,24 @@ def render_backtest_page():
     """
     st.markdown("# 🔄 Backtest chiến lược")
     
+    try:
+        # Import portfolio manager
+        from src.utils.portfolio_manager import PortfolioManager
+        
+        # Initialize portfolio manager
+        portfolio_manager = PortfolioManager()
+        all_stocks = sorted(portfolio_manager.get_all_stocks())
+        
+        if not all_stocks:
+            # Fallback if no portfolios
+            all_stocks = ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"]
+            st.warning("⚠️ Chưa có danh mục nào. Sử dụng danh sách mặc định.")
+            st.info("💡 Hãy vào 'Quản lý danh mục' để tạo danh mục!")
+        
+    except Exception as e:
+        st.error(f"❌ Lỗi khởi tạo portfolio manager: {str(e)}")
+        all_stocks = ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"]
+    
     # Strategy selection
     st.markdown("## 🎯 Chọn chiến lược")
     
@@ -43,7 +61,7 @@ def render_backtest_page():
     with col1:
         symbol = st.selectbox(
             "Cổ phiếu:",
-            ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"],
+            all_stocks,
             index=0
         )
     

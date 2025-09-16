@@ -22,16 +22,32 @@ def render_market_scanner_page():
     try:
         # Import here to avoid circular imports
         from src.analysis.market_scanner import MarketScanner
+        from src.utils.portfolio_manager import PortfolioManager
+        
+        # Initialize portfolio manager
+        portfolio_manager = PortfolioManager()
         
         # Sidebar controls
         st.sidebar.markdown("## 🔍 Tùy chọn quét")
         
-        scan_types = {
-            "Quét nhanh (Top 10)": "quick",
-            "Quét VN30": "vn30",
-            "Quét ngân hàng": "banks",
-            "Quét bất động sản": "real_estate"
-        }
+        # Get available portfolios
+        portfolios = portfolio_manager.get_portfolios()
+        
+        if portfolios:
+            scan_types = {}
+            # Add portfolio-based scan types
+            for portfolio_name in portfolios.keys():
+                scan_types[f"Quét {portfolio_name}"] = portfolio_name
+        else:
+            # Fallback if no portfolios
+            scan_types = {
+                "Quét nhanh (Top 10)": "quick",
+                "Quét VN30": "vn30", 
+                "Quét ngân hàng": "banks",
+                "Quét bất động sản": "real_estate"
+            }
+            st.sidebar.warning("⚠️ Chưa có danh mục nào. Sử dụng quét mặc định.")
+            st.sidebar.info("💡 Hãy vào 'Quản lý danh mục' để tạo danh mục!")
         
         selected_scan = st.sidebar.selectbox(
             "📊 Loại quét:",
@@ -50,21 +66,58 @@ def render_market_scanner_page():
         )
         
         # Scan button
-        if st.sidebar.button("🔍 Quét thị trường", type="primary"):
+        scan_clicked = st.sidebar.button("🔍 Quét thị trường", type="primary")
+        
+        # Landing page - hiển thị khi chưa quét
+        if not scan_clicked:
+            st.markdown("""
+            ## 🔍 Quét thị trường - Market Scanner
+            
+            Công cụ quét thị trường giúp bạn tìm kiếm các cơ hội đầu tư tốt nhất dựa trên:
+            
+            ### ✨ Tính năng chính:
+            - 📊 **Phân tích kỹ thuật tự động** - Quét các chỉ báo RSI, MACD, MA
+            - 🎯 **Tín hiệu mua/bán** - Đưa ra khuyến nghị dựa trên thuật toán
+            - 📈 **Đánh giá thanh khoản** - Phân tích khối lượng giao dịch
+            - 🏆 **Xếp hạng cổ phiếu** - Điểm số tổng hợp từ -1.0 đến 1.0
+            
+            ### 📁 Danh mục có sẵn:
+            """)
+            
+            # Hiển thị danh sách portfolios
+            portfolios = portfolio_manager.get_portfolios()
+            if portfolios:
+                cols = st.columns(3)
+                for i, (portfolio_name, stocks) in enumerate(portfolios.items()):
+                    with cols[i % 3]:
+                        st.info(f"**{portfolio_name}**\n{len(stocks)} cổ phiếu")
+            else:
+                st.warning("⚠️ Chưa có danh mục nào")
+            
+            return
+        
+        # Scan execution
+        if scan_clicked:
             with st.spinner("Đang quét thị trường..."):
                 try:
                     scanner = MarketScanner()
                     
-                    # Run scan based on type
-                    if scan_type == "quick":
-                        symbols = ["VCB", "CTG", "BID", "ACB", "VHM", "VIC", "VNM", "HPG", "MSN", "PLX"]
-                    elif scan_type == "vn30":
-                        symbols = ["VCB", "CTG", "BID", "ACB", "VHM", "VIC", "VNM", "HPG", "MSN", "PLX",
-                                 "TCB", "MBB", "TPB", "VPB", "STB", "SSI", "VND", "FPT", "GAS", "POW"]
-                    elif scan_type == "banks":
-                        symbols = ["VCB", "CTG", "BID", "ACB", "TCB", "MBB", "TPB", "VPB", "STB", "SHB"]
-                    elif scan_type == "real_estate":
-                        symbols = ["VHM", "VIC", "NVL", "PDR", "DXG", "KDH", "DIG", "CEO", "HDG", "NLG"]
+                    # Get symbols based on selected portfolio
+                    if scan_type in portfolios:
+                        symbols = portfolios[scan_type]
+                    else:
+                        # Fallback for old scan types
+                        if scan_type == "quick":
+                            symbols = ["VCB", "CTG", "BID", "ACB", "VHM", "VIC", "VNM", "HPG", "MSN", "PLX"]
+                        elif scan_type == "vn30":
+                            symbols = ["VCB", "CTG", "BID", "ACB", "VHM", "VIC", "VNM", "HPG", "MSN", "PLX",
+                                     "TCB", "MBB", "TPB", "VPB", "STB", "SSI", "VND", "FPT", "GAS", "POW"]
+                        elif scan_type == "banks":
+                            symbols = ["VCB", "CTG", "BID", "ACB", "TCB", "MBB", "TPB", "VPB", "STB", "SHB"]
+                        elif scan_type == "real_estate":
+                            symbols = ["VHM", "VIC", "NVL", "PDR", "DXG", "KDH", "DIG", "CEO", "HDG", "NLG"]
+                        else:
+                            symbols = ["VCB", "FPT", "VHM"]  # Default fallback
                     
                     results = scanner.scan_market(symbols)
                     

@@ -19,16 +19,48 @@ def render_comparison_page():
     """
     st.markdown("# 📊 So sánh cổ phiếu")
     
-    # Basic comparison interface
-    st.markdown("## Chọn cổ phiếu để so sánh")
+    try:
+        # Import portfolio manager
+        from src.utils.portfolio_manager import PortfolioManager
+        
+        # Initialize portfolio manager
+        portfolio_manager = PortfolioManager()
+        all_stocks = sorted(portfolio_manager.get_all_stocks())
+        
+        if not all_stocks:
+            # Fallback if no portfolios
+            all_stocks = ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"]
+            st.warning("⚠️ Chưa có danh mục nào. Sử dụng danh sách mặc định.")
+            st.info("💡 Hãy vào 'Quản lý danh mục' để tạo danh mục!")
+        
+        # Basic comparison interface
+        st.markdown("## Chọn cổ phiếu để so sánh")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            stock1 = st.selectbox("Cổ phiếu 1:", all_stocks, index=0, key="stock1")
+        
+        with col2:
+            # Ensure stock2 is different from stock1
+            stock2_options = [s for s in all_stocks if s != stock1]
+            stock2 = st.selectbox("Cổ phiếu 2:", stock2_options, index=0, key="stock2")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        stock1 = st.selectbox("Cổ phiếu 1:", ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"], index=0, key="stock1")
-    
-    with col2:
-        stock2 = st.selectbox("Cổ phiếu 2:", ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"], index=1, key="stock2")
+    except Exception as e:
+        st.error(f"❌ Lỗi khởi tạo: {str(e)}")
+        # Fallback
+        all_stocks = ["VCB", "CTG", "BID", "ACB", "VIC", "FPT", "MSN", "VNM", "PLX", "TCB"]
+        
+        # Basic comparison interface
+        st.markdown("## Chọn cổ phiếu để so sánh")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            stock1 = st.selectbox("Cổ phiếu 1:", all_stocks, index=0, key="stock1")
+        
+        with col2:
+            stock2 = st.selectbox("Cổ phiếu 2:", all_stocks, index=1, key="stock2")
     
     # Thời gian so sánh
     st.markdown("## ⏰ Khoảng thời gian")

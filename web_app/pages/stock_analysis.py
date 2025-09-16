@@ -26,6 +26,7 @@ def render_stock_analysis_page():
         from src.analysis.indicators import TechnicalIndicators
         from src.analysis.signals import TradingSignals
         from src.utils.config import ConfigManager
+        from src.utils.portfolio_manager import PortfolioManager
         import plotly.graph_objects as go
         from plotly.subplots import make_subplots
         from datetime import datetime, timedelta
@@ -41,14 +42,30 @@ def render_stock_analysis_page():
         data_provider = DataProvider(SimpleConfig())
         indicators = TechnicalIndicators()
         signals = TradingSignals()
+        portfolio_manager = PortfolioManager()
         
         # Sidebar controls
         st.sidebar.markdown("## ⚙️ Cài đặt")
         
-        # Symbol selection
-        symbols = config.get_supported_symbols()
-        if not symbols:
+        # Portfolio and symbol selection
+        portfolios = portfolio_manager.get_portfolios()
+        
+        if portfolios:
+            # Chọn danh mục
+            portfolio_names = list(portfolios.keys())
+            selected_portfolio = st.sidebar.selectbox(
+                "📁 Chọn danh mục:",
+                portfolio_names,
+                index=0
+            )
+            
+            # Chọn cổ phiếu từ danh mục
+            symbols = portfolios[selected_portfolio]
+        else:
+            # Fallback nếu chưa có danh mục nào
             symbols = ['VCB', 'FPT', 'VHM', 'HPG', 'VNM', 'MSN', 'TCB', 'CTG', 'BID']
+            st.sidebar.warning("⚠️ Chưa có danh mục nào. Sử dụng danh sách mặc định.")
+            st.sidebar.info("💡 Hãy vào 'Quản lý danh mục' để tạo danh mục mới!")
             
         selected_symbol = st.sidebar.selectbox(
             "📈 Chọn mã cổ phiếu:",
