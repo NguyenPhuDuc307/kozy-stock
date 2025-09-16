@@ -10,9 +10,15 @@ import streamlit as st
 import sys
 import os
 
-# Add project root to path  
-project_root = os.path.dirname(os.path.dirname(__file__))
-sys.path.append(project_root)
+# Import helper for cross-platform compatibility
+try:
+    from import_helper import setup_imports
+    setup_imports()
+except ImportError:
+    # Fallback manual setup
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    sys.path.append(project_root)
+    sys.path.append(os.path.join(project_root, 'src'))
 
 # Configure page
 st.set_page_config(

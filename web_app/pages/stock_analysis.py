@@ -21,12 +21,29 @@ def render_stock_analysis_page():
     st.markdown("# 📈 Phân tích cổ phiếu")
     
     try:
-        # Import here to avoid circular imports
-        from src.data.data_provider import DataProvider
-        from src.analysis.indicators import TechnicalIndicators
-        from src.analysis.signals import TradingSignals
-        from src.utils.config import ConfigManager
-        from src.utils.portfolio_manager import PortfolioManager
+        # Import here to avoid circular imports - compatible with Streamlit Cloud
+        import sys
+        import os
+        
+        # Add project root to path for imports
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        sys.path.append(project_root)
+        
+        try:
+            from src.data.data_provider import DataProvider
+            from src.analysis.indicators import TechnicalIndicators
+            from src.analysis.signals import TradingSignals
+            from src.utils.config import ConfigManager
+            from src.utils.portfolio_manager import PortfolioManager
+        except ImportError:
+            # Fallback for Streamlit Cloud
+            sys.path.append(os.path.join(project_root, 'src'))
+            from data.data_provider import DataProvider
+            from analysis.indicators import TechnicalIndicators
+            from analysis.signals import TradingSignals
+            from utils.config import ConfigManager
+            from utils.portfolio_manager import PortfolioManager
+            
         import plotly.graph_objects as go
         from plotly.subplots import make_subplots
         from datetime import datetime, timedelta
@@ -320,9 +337,7 @@ def render_stock_analysis_page():
                     st.plotly_chart(fig_price, width='stretch')
                     
                     # 2. RSI Chart
-                    if 'rsi' in df_with_indicators.columns:
-                        st.subheader("📊 Chỉ số RSI")
-                        
+                    if 'rsi' in df_with_indicators.columns:                        
                         fig_rsi = go.Figure()
                         
                         fig_rsi.add_trace(
@@ -364,9 +379,7 @@ def render_stock_analysis_page():
                         st.plotly_chart(fig_rsi, width='stretch')
                     
                     # 3. MACD Chart
-                    if all(col in df_with_indicators.columns for col in ['macd', 'macd_signal', 'macd_histogram']):
-                        st.subheader("📈 Chỉ số MACD")
-                        
+                    if all(col in df_with_indicators.columns for col in ['macd', 'macd_signal', 'macd_histogram']):                        
                         fig_macd = go.Figure()
                         
                         # MACD line

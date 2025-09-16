@@ -92,9 +92,21 @@ def render_comparison_page():
                 import pandas as pd
                 import plotly.graph_objects as go
                 from plotly.subplots import make_subplots
+                import sys
+                import os
                 
-                from src.data.data_provider import DataProvider
-                from src.utils.config import ConfigManager
+                # Add project root to path for imports
+                project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                sys.path.append(project_root)
+                
+                try:
+                    from src.data.data_provider import DataProvider
+                    from src.utils.config import ConfigManager
+                except ImportError:
+                    # Fallback for Streamlit Cloud
+                    sys.path.append(os.path.join(project_root, 'src'))
+                    from data.data_provider import DataProvider
+                    from utils.config import ConfigManager
                 
                 # Simple config class for DataProvider
                 class SimpleConfig:
