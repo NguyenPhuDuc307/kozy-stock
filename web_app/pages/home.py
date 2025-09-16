@@ -85,7 +85,7 @@ def render_home_page():
                             st.metric(
                                 label=info['name'],
                                 value=f"{latest['close']:,.2f}",
-                                delta=f"{change_pct:+.2f}%"
+                                delta=f"{change:+.2f} ({change_pct:+.2f}%)"
                             )
                         
                         # Lưu dữ liệu để vẽ biểu đồ
@@ -199,10 +199,14 @@ def render_home_page():
                 info = data['info']
                 change_pct = data['change_pct']
                 
+                # Tính điểm thay đổi tuyệt đối
+                previous_data = data['data'].iloc[-2] if len(data['data']) > 1 else latest
+                change_points = latest['close'] - previous_data['close']
+                
                 summary_data.append({
                     "Sàn": info['name'],
                     "Giá đóng cửa": f"{latest['close']:,.2f}",
-                    "Thay đổi (%)": f"{change_pct:+.2f}%",
+                    "Thay đổi": f"{change_points:+.2f} ({change_pct:+.2f}%)",
                     "Khối lượng": f"{latest['volume']:,.0f}",
                     "Cao nhất": f"{latest['high']:,.2f}",
                     "Thấp nhất": f"{latest['low']:,.2f}"
@@ -218,7 +222,7 @@ def render_home_page():
                     return 'color: red'
                 return 'color: black'
             
-            styled_df = summary_df.style.map(color_change, subset=['Thay đổi (%)'])
+            styled_df = summary_df.style.map(color_change, subset=['Thay đổi'])
             st.dataframe(styled_df, width='stretch', hide_index=True)
             
     except ImportError:

@@ -35,6 +35,7 @@ def render_stock_analysis_page():
             from src.analysis.signals import TradingSignals
             from src.utils.config import ConfigManager
             from src.utils.portfolio_manager import PortfolioManager
+            from src.utils.unified_config import UnifiedConfig, TimeFrame, UnifiedSignalAnalyzer
         except ImportError:
             # Fallback for Streamlit Cloud
             sys.path.append(os.path.join(project_root, 'src'))
@@ -54,12 +55,22 @@ def render_stock_analysis_page():
             CACHE_ENABLED = True
             CACHE_DURATION = 300
         
+        # Unified timeframe selector
+        selected_timeframe = UnifiedConfig.create_sidebar_timeframe_selector("stock_analysis_timeframe")
+        timeframe_config = UnifiedConfig.get_timeframe_config(selected_timeframe)
+        
+        # Advanced settings
+        custom_thresholds = UnifiedConfig.create_advanced_settings_expander("stock_analysis_advanced")
+        
         # Initialize components
         config = ConfigManager()
         data_provider = DataProvider(SimpleConfig())
         indicators = TechnicalIndicators()
         signals = TradingSignals()
         portfolio_manager = PortfolioManager()
+        
+        # Initialize unified signal analyzer
+        signal_analyzer = UnifiedSignalAnalyzer(selected_timeframe, custom_thresholds)
         
         # Sidebar controls
         st.sidebar.markdown("## ⚙️ Cài đặt")
@@ -90,22 +101,6 @@ def render_stock_analysis_page():
             index=0
         )
         
-        # Time period
-        period_options = {
-            "1 tháng": 30,
-            "3 tháng": 90, 
-            "6 tháng": 180,
-            "1 năm": 365,
-            "2 năm": 730
-        }
-        
-        selected_period_name = st.sidebar.selectbox(
-            "📅 Thời gian:",
-            list(period_options.keys()),
-            index=1
-        )
-        days = period_options[selected_period_name]
-        
         # Technical indicators settings
         st.sidebar.markdown("### 📊 Chỉ báo kỹ thuật")
         show_ichimoku = st.sidebar.checkbox("🌤️ Hiển thị Ichimoku Cloud", value=True)
@@ -129,28 +124,37 @@ def render_stock_analysis_page():
                         latest_preview = df_preview.iloc[-1]
                         prev_preview = df_preview.iloc[-2] if len(df_preview) > 1 else latest_preview
                         
-                        price_change = latest_preview['close'] - prev_preview['close']
-                        price_change_pct = (price_change / prev_preview['close']) * 100
+                        # Apply price adjustment like in market scanner
+                        original_close = float(latest_preview['close'])
+                        adjusted_close = original_close * 1000 if original_close < 100 else original_close
+                        
+                        original_change = latest_preview['close'] - prev_preview['close']
+                        adjusted_change = original_change * (1000 if original_close < 100 else 1)
+                        price_change_pct = (original_change / prev_preview['close']) * 100
+                        
+                        original_high = float(df_preview['high'].max())
+                        adjusted_high = original_high * 1000 if original_high < 100 else original_high
+                        
+                        original_low = float(df_preview['low'].min())
+                        adjusted_low = original_low * 1000 if original_low < 100 else original_low
                         
                         col1, col2, col3, col4 = st.columns(4)
                         
                         with col1:
                             st.metric(
                                 "💰 Giá đóng cửa", 
-                                f"{latest_preview['close']:,.0f} VND",
-                                delta=f"{price_change:+,.0f} ({price_change_pct:+.2f}%)"
+                                f"{adjusted_close:,.0f} VND",
+                                delta=f"{adjusted_change:+,.0f} ({price_change_pct:+.2f}%)"
                             )
                         
                         with col2:
                             st.metric("📊 Khối lượng", f"{latest_preview['volume']:,.0f}")
                         
                         with col3:
-                            high_52w = df_preview['high'].max()
-                            st.metric("📈 Cao nhất (30 ngày)", f"{high_52w:,.0f} VND")
+                            st.metric("📈 Cao nhất (30 ngày)", f"{adjusted_high:,.0f} VND")
                         
                         with col4:
-                            low_52w = df_preview['low'].min()
-                            st.metric("📉 Thấp nhất (30 ngày)", f"{low_52w:,.0f} VND")
+                            st.metric("📉 Thấp nhất (30 ngày)", f"{adjusted_low:,.0f} VND")
                     
                 except Exception as e:
                     st.warning("⚠️ Không thể tải thông tin preview")
@@ -158,11 +162,8 @@ def render_stock_analysis_page():
         if analyze_clicked:
             with st.spinner("Đang phân tích..."):
                 try:
-                    # Calculate date range với thêm dữ liệu trước đó để tính chỉ báo
-                    end_date = datetime.now()
-                    # Thêm 200 ngày để có đủ dữ liệu cho các chỉ báo như SMA 200
-                    extended_days = days + 200
-                    start_date = end_date - timedelta(days=extended_days)
+                    # Calculate date range using unified config
+                    start_date, end_date = UnifiedConfig.get_date_range(selected_timeframe)
                     start_str = start_date.strftime("%Y-%m-%d")
                     end_str = end_date.strftime("%Y-%m-%d")
                     
@@ -181,16 +182,20 @@ def render_stock_analysis_page():
                         return
                     
                     # Cắt về period người dùng chọn (lấy các ngày cuối)
-                    df_with_indicators = df_with_indicators_extended.tail(days)
+                    df_with_indicators = df_with_indicators_extended.tail(timeframe_config.display_days)
                     df = df_with_indicators[['open', 'high', 'low', 'close', 'volume']].copy()
                     
                     # Get latest values
                     latest = df_with_indicators.iloc[-1]
                     prev = df_with_indicators.iloc[-2] if len(df_with_indicators) > 1 else latest
                     
-                    # Price change
-                    price_change = latest['close'] - prev['close']
-                    price_change_pct = (price_change / prev['close']) * 100
+                    # Apply price adjustment like in market scanner
+                    original_close = float(latest['close'])
+                    adjusted_close = original_close * 1000 if original_close < 100 else original_close
+                    
+                    original_change = latest['close'] - prev['close']
+                    adjusted_change = original_change * (1000 if original_close < 100 else 1)
+                    price_change_pct = (original_change / prev['close']) * 100
                     
                     # Display basic info
                     col1, col2, col3, col4 = st.columns(4)
@@ -198,8 +203,8 @@ def render_stock_analysis_page():
                     with col1:
                         st.metric(
                             "💰 Giá đóng cửa", 
-                            f"{latest['close']:,.0f} VND",
-                            delta=f"{price_change:+,.0f} ({price_change_pct:+.2f}%)"
+                            f"{adjusted_close:,.0f} VND",
+                            delta=f"{adjusted_change:+,.0f} ({price_change_pct:+.2f}%)"
                         )
                     
                     with col2:
@@ -378,7 +383,7 @@ def render_stock_analysis_page():
                     
                     # Update layout for price chart
                     fig_price.update_layout(
-                        title=f"Giá cổ phiếu {selected_symbol} - {selected_period_name}",
+                        title=f"Giá cổ phiếu {selected_symbol} - {timeframe_config.name}",
                         xaxis_rangeslider_visible=False,
                         height=600,
                         showlegend=True,
@@ -551,11 +556,14 @@ def render_stock_analysis_page():
                             # Price vs Cloud (Kumo)
                             cloud_top = max(latest['senkou_span_a'], latest['senkou_span_b'])
                             cloud_bottom = min(latest['senkou_span_a'], latest['senkou_span_b'])
-                            current_price = latest['close']
+                            current_price = adjusted_close  # Use adjusted price for display consistency
                             
-                            if current_price > cloud_top:
+                            # Use original price for cloud comparison logic
+                            original_price_for_comparison = latest['close']
+                            
+                            if original_price_for_comparison > cloud_top:
                                 cloud_signal = "Trên mây (Tăng)"
-                            elif current_price < cloud_bottom:
+                            elif original_price_for_comparison < cloud_bottom:
                                 cloud_signal = "Dưới mây (Giảm)"
                             else:
                                 cloud_signal = "Trong mây (Biến động)"
@@ -656,14 +664,16 @@ def render_stock_analysis_page():
                         else:
                             st.warning("⚠️ Không có chỉ báo momentum khả dụng")
                     
-                    # Generate trading signal
+                    # Generate unified trading signal
                     st.subheader("🎯 Tín hiệu giao dịch tổng hợp")
-                    signal_result = signals.generate_signal(df_with_indicators)
+                    st.info(f"🕐 **Phân tích theo**: {timeframe_config.name} - {timeframe_config.description}")
                     
-                    if signal_result:
-                        signal_type = signal_result.signal_type
-                        confidence = signal_result.confidence
-                        reasons = signal_result.reasons
+                    signal_analysis = signal_analyzer.analyze_comprehensive_signal(df_with_indicators)
+                    
+                    if signal_analysis:
+                        signal_type = signal_analysis['signal']
+                        confidence = signal_analysis['confidence']
+                        reasons = signal_analysis['reasons']
                         
                         if signal_type == 'BUY':
                             st.success(f"🟢 **TÍN HIỆU MUA** - Độ tin cậy: {confidence:.0%}")

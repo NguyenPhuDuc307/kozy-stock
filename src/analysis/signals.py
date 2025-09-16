@@ -104,29 +104,39 @@ class TradingSignals:
         """
         # Golden Cross & Death Cross
         if 'sma_50' in df.columns and 'sma_200' in df.columns:
+            sma_50_curr = df['sma_50'].fillna(0)
+            sma_200_curr = df['sma_200'].fillna(0)
+            sma_50_prev = df['sma_50'].shift(1).fillna(0)
+            sma_200_prev = df['sma_200'].shift(1).fillna(0)
+            
             df['ma_golden_cross'] = (
-                (df['sma_50'] > df['sma_200']) & 
-                (df['sma_50'].shift(1) <= df['sma_200'].shift(1))
+                (sma_50_curr > sma_200_curr) & 
+                (sma_50_prev <= sma_200_prev)
             )
             df['ma_death_cross'] = (
-                (df['sma_50'] < df['sma_200']) & 
-                (df['sma_50'].shift(1) >= df['sma_200'].shift(1))
+                (sma_50_curr < sma_200_curr) & 
+                (sma_50_prev >= sma_200_prev)
             )
         
         # Price vs Moving Average
         if 'sma_20' in df.columns:
-            df['price_above_ma20'] = df['close'] > df['sma_20']
-            df['price_below_ma20'] = df['close'] < df['sma_20']
+            df['price_above_ma20'] = df['close'].fillna(0) > df['sma_20'].fillna(0)
+            df['price_below_ma20'] = df['close'].fillna(0) < df['sma_20'].fillna(0)
         
         # EMA Crossover
         if 'ema_12' in df.columns and 'ema_26' in df.columns:
+            ema_12_curr = df['ema_12'].fillna(0)
+            ema_26_curr = df['ema_26'].fillna(0)
+            ema_12_prev = df['ema_12'].shift(1).fillna(0)
+            ema_26_prev = df['ema_26'].shift(1).fillna(0)
+            
             df['ema_bullish_cross'] = (
-                (df['ema_12'] > df['ema_26']) & 
-                (df['ema_12'].shift(1) <= df['ema_26'].shift(1))
+                (ema_12_curr > ema_26_curr) & 
+                (ema_12_prev <= ema_26_prev)
             )
             df['ema_bearish_cross'] = (
-                (df['ema_12'] < df['ema_26']) & 
-                (df['ema_12'].shift(1) >= df['ema_26'].shift(1))
+                (ema_12_curr < ema_26_curr) & 
+                (ema_12_prev >= ema_26_prev)
             )
         
         return df
@@ -138,28 +148,34 @@ class TradingSignals:
         if 'rsi' not in df.columns:
             return df
         
+        rsi_curr = df['rsi'].fillna(50)
+        rsi_prev = df['rsi'].shift(1).fillna(50)
+        close_curr = df['close'].fillna(0)
+        close_prev = df['close'].shift(5).fillna(0)
+        rsi_prev_5 = df['rsi'].shift(5).fillna(50)
+        
         # Oversold/Overbought
-        df['rsi_oversold'] = df['rsi'] < 30
-        df['rsi_overbought'] = df['rsi'] > 70
+        df['rsi_oversold'] = rsi_curr < 30
+        df['rsi_overbought'] = rsi_curr > 70
         
         # RSI Divergence (simplified)
         df['rsi_bullish_divergence'] = (
-            (df['close'] < df['close'].shift(5)) & 
-            (df['rsi'] > df['rsi'].shift(5)) &
-            (df['rsi'] < 50)
+            (close_curr < close_prev) & 
+            (rsi_curr > rsi_prev_5) &
+            (rsi_curr < 50)
         )
         df['rsi_bearish_divergence'] = (
-            (df['close'] > df['close'].shift(5)) & 
-            (df['rsi'] < df['rsi'].shift(5)) &
-            (df['rsi'] > 50)
+            (close_curr > close_prev) & 
+            (rsi_curr < rsi_prev_5) &
+            (rsi_curr > 50)
         )
         
         # RSI Crossing levels
         df['rsi_buy_signal'] = (
-            (df['rsi'] > 30) & (df['rsi'].shift(1) <= 30)
+            (rsi_curr > 30) & (rsi_prev <= 30)
         )
         df['rsi_sell_signal'] = (
-            (df['rsi'] < 70) & (df['rsi'].shift(1) >= 70)
+            (rsi_curr < 70) & (rsi_prev >= 70)
         )
         
         return df
@@ -171,28 +187,32 @@ class TradingSignals:
         if 'macd' not in df.columns or 'macd_signal' not in df.columns:
             return df
         
+        macd_curr = df['macd'].fillna(0)
+        macd_signal_curr = df['macd_signal'].fillna(0)
+        macd_prev = df['macd'].shift(1).fillna(0)
+        macd_signal_prev = df['macd_signal'].shift(1).fillna(0)
+        
         # MACD Crossover
         df['macd_bullish_cross'] = (
-            (df['macd'] > df['macd_signal']) & 
-            (df['macd'].shift(1) <= df['macd_signal'].shift(1))
+            (macd_curr > macd_signal_curr) & 
+            (macd_prev <= macd_signal_prev)
         )
         df['macd_bearish_cross'] = (
-            (df['macd'] < df['macd_signal']) & 
-            (df['macd'].shift(1) >= df['macd_signal'].shift(1))
+            (macd_curr < macd_signal_curr) & 
+            (macd_prev >= macd_signal_prev)
         )
         
         # MACD Zero Line Cross
-        df['macd_above_zero'] = df['macd'] > 0
-        df['macd_below_zero'] = df['macd'] < 0
+        df['macd_above_zero'] = macd_curr > 0
+        df['macd_below_zero'] = macd_curr < 0
         
         # MACD Histogram signals
         if 'macd_histogram' in df.columns:
-            df['macd_hist_increasing'] = (
-                df['macd_histogram'] > df['macd_histogram'].shift(1)
-            )
-            df['macd_hist_decreasing'] = (
-                df['macd_histogram'] < df['macd_histogram'].shift(1)
-            )
+            macd_hist_curr = df['macd_histogram'].fillna(0)
+            macd_hist_prev = df['macd_histogram'].shift(1).fillna(0)
+            
+            df['macd_hist_increasing'] = macd_hist_curr > macd_hist_prev
+            df['macd_hist_decreasing'] = macd_hist_curr < macd_hist_prev
         
         return df
     
@@ -229,19 +249,24 @@ class TradingSignals:
         if not all(col in df.columns for col in ['stoch_k', 'stoch_d']):
             return df
         
+        stoch_k_curr = df['stoch_k'].fillna(50)
+        stoch_d_curr = df['stoch_d'].fillna(50)
+        stoch_k_prev = df['stoch_k'].shift(1).fillna(50)
+        stoch_d_prev = df['stoch_d'].shift(1).fillna(50)
+        
         # Stochastic Crossover
         df['stoch_bullish_cross'] = (
-            (df['stoch_k'] > df['stoch_d']) & 
-            (df['stoch_k'].shift(1) <= df['stoch_d'].shift(1))
+            (stoch_k_curr > stoch_d_curr) & 
+            (stoch_k_prev <= stoch_d_prev)
         )
         df['stoch_bearish_cross'] = (
-            (df['stoch_k'] < df['stoch_d']) & 
-            (df['stoch_k'].shift(1) >= df['stoch_d'].shift(1))
+            (stoch_k_curr < stoch_d_curr) & 
+            (stoch_k_prev >= stoch_d_prev)
         )
         
         # Oversold/Overbought levels
-        df['stoch_oversold'] = (df['stoch_k'] < 20) & (df['stoch_d'] < 20)
-        df['stoch_overbought'] = (df['stoch_k'] > 80) & (df['stoch_d'] > 80)
+        df['stoch_oversold'] = (stoch_k_curr < 20) & (stoch_d_curr < 20)
+        df['stoch_overbought'] = (stoch_k_curr > 80) & (stoch_d_curr > 80)
         
         return df
     
@@ -253,66 +278,79 @@ class TradingSignals:
         if not all(col in df.columns for col in required_cols):
             return df
         
+        tenkan_curr = df['tenkan_sen'].fillna(0)
+        kijun_curr = df['kijun_sen'].fillna(0)
+        tenkan_prev = df['tenkan_sen'].shift(1).fillna(0)
+        kijun_prev = df['kijun_sen'].shift(1).fillna(0)
+        close_curr = df['close'].fillna(0)
+        close_prev = df['close'].shift(1).fillna(0)
+        
         # Tenkan-sen vs Kijun-sen crossover
         df['tenkan_kijun_bullish'] = (
-            (df['tenkan_sen'] > df['kijun_sen']) & 
-            (df['tenkan_sen'].shift(1) <= df['kijun_sen'].shift(1))
+            (tenkan_curr > kijun_curr) & 
+            (tenkan_prev <= kijun_prev)
         )
         df['tenkan_kijun_bearish'] = (
-            (df['tenkan_sen'] < df['kijun_sen']) & 
-            (df['tenkan_sen'].shift(1) >= df['kijun_sen'].shift(1))
+            (tenkan_curr < kijun_curr) & 
+            (tenkan_prev >= kijun_prev)
         )
         
         # Price vs Cloud (Kumo)
-        df['cloud_top'] = df[['senkou_span_a', 'senkou_span_b']].max(axis=1)
-        df['cloud_bottom'] = df[['senkou_span_a', 'senkou_span_b']].min(axis=1)
+        df['cloud_top'] = df[['senkou_span_a', 'senkou_span_b']].max(axis=1).fillna(0)
+        df['cloud_bottom'] = df[['senkou_span_a', 'senkou_span_b']].min(axis=1).fillna(0)
+        cloud_top_curr = df['cloud_top']
+        cloud_bottom_curr = df['cloud_bottom']
+        cloud_top_prev = df['cloud_top'].shift(1).fillna(0)
+        cloud_bottom_prev = df['cloud_bottom'].shift(1).fillna(0)
         
-        df['price_above_cloud'] = df['close'] > df['cloud_top']
-        df['price_below_cloud'] = df['close'] < df['cloud_bottom']
-        df['price_in_cloud'] = (df['close'] >= df['cloud_bottom']) & (df['close'] <= df['cloud_top'])
+        df['price_above_cloud'] = close_curr > cloud_top_curr
+        df['price_below_cloud'] = close_curr < cloud_bottom_curr
+        df['price_in_cloud'] = (close_curr >= cloud_bottom_curr) & (close_curr <= cloud_top_curr)
         
         # Cloud breakout signals
         df['cloud_breakout_bullish'] = (
-            (df['close'] > df['cloud_top']) & 
-            (df['close'].shift(1) <= df['cloud_top'].shift(1))
+            (close_curr > cloud_top_curr) & 
+            (close_prev <= cloud_top_prev)
         )
         df['cloud_breakout_bearish'] = (
-            (df['close'] < df['cloud_bottom']) & 
-            (df['close'].shift(1) >= df['cloud_bottom'].shift(1))
+            (close_curr < cloud_bottom_curr) & 
+            (close_prev >= cloud_bottom_prev)
         )
         
         # Cloud color (direction)
-        df['cloud_bullish'] = df['senkou_span_a'] > df['senkou_span_b']
-        df['cloud_bearish'] = df['senkou_span_a'] < df['senkou_span_b']
+        df['cloud_bullish'] = df['senkou_span_a'].fillna(0) > df['senkou_span_b'].fillna(0)
+        df['cloud_bearish'] = df['senkou_span_a'].fillna(0) < df['senkou_span_b'].fillna(0)
         
         # Chikou Span signals (lagging span)
-        df['chikou_above_price'] = df['chikou_span'] > df['close'].shift(26)
-        df['chikou_below_price'] = df['chikou_span'] < df['close'].shift(26)
+        chikou_span = df['chikou_span'].fillna(0)
+        close_26_ago = df['close'].shift(26).fillna(0)
+        df['chikou_above_price'] = chikou_span > close_26_ago
+        df['chikou_below_price'] = chikou_span < close_26_ago
         
         # Strong Ichimoku signals (multiple confirmations)
         df['ichimoku_strong_bullish'] = (
-            df['tenkan_kijun_bullish'] & 
-            df['price_above_cloud'] & 
-            df['cloud_bullish'] &
-            df['chikou_above_price']
+            df['tenkan_kijun_bullish'].fillna(False) & 
+            df['price_above_cloud'].fillna(False) & 
+            df['cloud_bullish'].fillna(False) &
+            df['chikou_above_price'].fillna(False)
         )
         df['ichimoku_strong_bearish'] = (
-            df['tenkan_kijun_bearish'] & 
-            df['price_below_cloud'] & 
-            df['cloud_bearish'] &
-            df['chikou_below_price']
+            df['tenkan_kijun_bearish'].fillna(False) & 
+            df['price_below_cloud'].fillna(False) & 
+            df['cloud_bearish'].fillna(False) &
+            df['chikou_below_price'].fillna(False)
         )
         
         # Trend continuation signals
         df['ichimoku_uptrend'] = (
-            df['price_above_cloud'] & 
-            df['tenkan_sen'] > df['kijun_sen'] &
-            df['cloud_bullish']
+            df['price_above_cloud'].fillna(False) & 
+            (tenkan_curr > kijun_curr) &
+            df['cloud_bullish'].fillna(False)
         )
         df['ichimoku_downtrend'] = (
-            df['price_below_cloud'] & 
-            df['tenkan_sen'] < df['kijun_sen'] &
-            df['cloud_bearish']
+            df['price_below_cloud'].fillna(False) & 
+            (tenkan_curr < kijun_curr) &
+            df['cloud_bearish'].fillna(False)
         )
         
         return df
@@ -324,22 +362,28 @@ class TradingSignals:
         if 'volume' not in df.columns:
             return df
         
+        volume_curr = df['volume'].fillna(0)
+        volume_prev = df['volume'].shift(1).fillna(0)
+        close_curr = df['close'].fillna(0)
+        close_prev = df['close'].shift(1).fillna(0)
+        
         # Volume spike
         if 'volume_sma_20' in df.columns:
-            df['volume_spike'] = df['volume'] > (df['volume_sma_20'] * 2)
+            volume_sma_20 = df['volume_sma_20'].fillna(0)
+            df['volume_spike'] = volume_curr > (volume_sma_20 * 2)
         
         # Volume trend
-        df['volume_increasing'] = df['volume'] > df['volume'].shift(1)
-        df['volume_decreasing'] = df['volume'] < df['volume'].shift(1)
+        df['volume_increasing'] = volume_curr > volume_prev
+        df['volume_decreasing'] = volume_curr < volume_prev
         
         # Price-Volume confirmation
         df['bullish_volume'] = (
-            (df['close'] > df['close'].shift(1)) & 
-            (df['volume'] > df['volume'].shift(1))
+            (close_curr > close_prev) & 
+            (volume_curr > volume_prev)
         )
         df['bearish_volume'] = (
-            (df['close'] < df['close'].shift(1)) & 
-            (df['volume'] > df['volume'].shift(1))
+            (close_curr < close_prev) & 
+            (volume_curr > volume_prev)
         )
         
         return df
@@ -348,38 +392,48 @@ class TradingSignals:
         """
         Tín hiệu từ các pattern
         """
+        # Fill NaN values for OHLC data
+        open_curr = df['open'].fillna(0)
+        high_curr = df['high'].fillna(0)
+        low_curr = df['low'].fillna(0)
+        close_curr = df['close'].fillna(0)
+        open_prev = df['open'].shift(1).fillna(0)
+        close_prev = df['close'].shift(1).fillna(0)
+        
         # Doji pattern
-        body = abs(df['close'] - df['open'])
-        range_size = df['high'] - df['low']
+        body = abs(close_curr - open_curr)
+        range_size = high_curr - low_curr
         df['doji'] = body < (range_size * 0.1)
         
         # Hammer/Shooting Star
-        lower_shadow = df['low'] - df[['open', 'close']].min(axis=1)
-        upper_shadow = df['high'] - df[['open', 'close']].max(axis=1)
+        min_oc = pd.concat([open_curr, close_curr], axis=1).min(axis=1)
+        max_oc = pd.concat([open_curr, close_curr], axis=1).max(axis=1)
+        lower_shadow = low_curr - min_oc
+        upper_shadow = high_curr - max_oc
         
         df['hammer'] = (
             (lower_shadow > body * 2) & 
             (upper_shadow < body * 0.5) &
-            (df['close'] < df['close'].shift(1))  # After downtrend
+            (close_curr < close_prev)  # After downtrend
         )
         df['shooting_star'] = (
             (upper_shadow > body * 2) & 
             (lower_shadow < body * 0.5) &
-            (df['close'] > df['close'].shift(1))  # After uptrend
+            (close_curr > close_prev)  # After uptrend
         )
         
         # Engulfing patterns
         df['bullish_engulfing'] = (
-            (df['open'] < df['close']) &  # Current candle is bullish
-            (df['open'].shift(1) > df['close'].shift(1)) &  # Previous candle is bearish
-            (df['open'] < df['close'].shift(1)) &  # Current open < previous close
-            (df['close'] > df['open'].shift(1))  # Current close > previous open
+            (open_curr < close_curr) &  # Current candle is bullish
+            (open_prev > close_prev) &  # Previous candle is bearish
+            (open_curr < close_prev) &  # Current open < previous close
+            (close_curr > open_prev)  # Current close > previous open
         )
         df['bearish_engulfing'] = (
-            (df['open'] > df['close']) &  # Current candle is bearish
-            (df['open'].shift(1) < df['close'].shift(1)) &  # Previous candle is bullish
-            (df['open'] > df['close'].shift(1)) &  # Current open > previous close
-            (df['close'] < df['open'].shift(1))  # Current close < previous open
+            (open_curr > close_curr) &  # Current candle is bearish
+            (open_prev < close_prev) &  # Previous candle is bullish
+            (open_curr > close_prev) &  # Current open > previous close
+            (close_curr < open_prev)  # Current close < previous open
         )
         
         return df
