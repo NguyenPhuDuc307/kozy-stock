@@ -1,0 +1,34 @@
+{
+  "portfolios": {
+    "portfolio_1_1758009281": {
+      "id": "portfolio_1_1758009281",
+      "name": "Nguyễn Phú Đức",
+      "description": "",
+      "initial_cash": 100000000,
+      "current_cash": 100000000,
+      "strategy": "Value Investing",
+      "created_date": "2025-09-16 14:54:41",
+      "last_updated": "2025-09-16 15:03:55",
+      "trading_file": "trading_history_portfolio_1_1758009281.json",
+      "is_active": true,
+      "total_invested": 26973700.0,
+      "total_profit_loss": 0.0,
+      "total_value": 126973700.0
+    },
+    "portfolio_2_1758009497": {
+      "id": "portfolio_2_1758009497",
+      "name": "Test - Nguyễn Phú Đức",
+      "description": "",
+      "initial_cash": 10000000,
+      "current_cash": 10000000,
+      "strategy": "Value Investing",
+      "created_date": "2025-09-16 14:58:17",
+      "last_updated": "2025-09-16 15:03:55",
+      "trading_file": "trading_history_portfolio_2_1758009497.json",
+      "is_active": true,
+      "total_invested": 0.0,
+      "total_profit_loss": 0.0,
+      "total_value": 10000000.0
+    }
+  }
+}

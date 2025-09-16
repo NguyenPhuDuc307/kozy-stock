@@ -1,0 +1,110 @@
+{
+  "transactions": [
+    {
+      "id": 1,
+      "symbol": "FPT",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 103707,
+      "total_value": 10370700,
+      "fee": 0,
+      "net_value": 10370700,
+      "date": "2025-09-16 15:03:37",
+      "note": ""
+    },
+    {
+      "id": 2,
+      "symbol": "CTG",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 52605,
+      "total_value": 5260500,
+      "fee": 0,
+      "net_value": 5260500,
+      "date": "2025-09-16 15:03:43",
+      "note": ""
+    },
+    {
+      "id": 3,
+      "symbol": "MSN",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 86973,
+      "total_value": 8697300,
+      "fee": 0,
+      "net_value": 8697300,
+      "date": "2025-09-16 15:03:50",
+      "note": ""
+    },
+    {
+      "id": 4,
+      "symbol": "ACB",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 26452,
+      "total_value": 2645200,
+      "fee": 0,
+      "net_value": 2645200,
+      "date": "2025-09-16 15:03:55",
+      "note": ""
+    }
+  ],
+  "holdings": {
+    "FPT": {
+      "total_shares": 100,
+      "total_cost": 10370700.0,
+      "avg_price": 103707.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 103707,
+          "fee": 0,
+          "date": "2025-09-16 15:03:37"
+        }
+      ]
+    },
+    "CTG": {
+      "total_shares": 100,
+      "total_cost": 5260500.0,
+      "avg_price": 52605.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 52605,
+          "fee": 0,
+          "date": "2025-09-16 15:03:43"
+        }
+      ]
+    },
+    "MSN": {
+      "total_shares": 100,
+      "total_cost": 8697300.0,
+      "avg_price": 86973.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 86973,
+          "fee": 0,
+          "date": "2025-09-16 15:03:50"
+        }
+      ]
+    },
+    "ACB": {
+      "total_shares": 100,
+      "total_cost": 2645200.0,
+      "avg_price": 26452.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 26452,
+          "fee": 0,
+          "date": "2025-09-16 15:03:55"
+        }
+      ]
+    }
+  }
+}

@@ -46,10 +46,8 @@ def get_portfolio_data():
     current_holdings = trading_history.get_current_holdings()
     
     if not current_holdings:
-        # Nếu chưa có giao dịch nào, tạo dữ liệu mẫu
-        st.info("📝 Chưa có lịch sử giao dịch. Tạo dữ liệu mẫu...")
-        trading_history.add_sample_data()
-        current_holdings = trading_history.get_current_holdings()
+        # Nếu chưa có giao dịch nào, return empty
+        return pd.DataFrame()
     
     portfolio_data = []
     
@@ -227,11 +225,52 @@ def render_portfolio_tracking_page():
     st.markdown("# 📊 Theo dõi danh mục đầu tư")
     
     try:
-        # Import trading history
+        # Import modules
         from src.utils.trading_history import TradingHistory
+        from src.utils.trading_portfolio_manager import TradingPortfolioManager
         
-        # Initialize trading history
-        trading_history = TradingHistory()
+        # Khởi tạo portfolio manager
+        if 'trading_portfolio_manager' not in st.session_state:
+            st.session_state.trading_portfolio_manager = TradingPortfolioManager()
+        
+        portfolio_manager = st.session_state.trading_portfolio_manager
+        
+        # Lấy danh sách danh mục
+        portfolios = portfolio_manager.get_portfolios()
+        
+        if not portfolios:
+            st.info("📝 Chưa có danh mục nào. Hãy tạo danh mục đầu tiên trong trang 'Quản lý nhiều danh mục'!")
+            st.warning("⚠️ Vui lòng vào trang 'Quản lý nhiều danh mục' để tạo danh mục mới")
+            return
+        
+        # Sidebar để chọn danh mục
+        st.sidebar.markdown("## 📁 Chọn Danh mục")
+        
+        portfolio_options = [f"{p['name']} ({p['id']})" for p in portfolios]
+        selected_portfolio = st.sidebar.selectbox(
+            "Danh mục:",
+            portfolio_options,
+            key="portfolio_selector"
+        )
+        
+        # Lấy portfolio_id từ selection
+        portfolio_id = selected_portfolio.split("(")[-1].strip(")")
+        portfolio_info = portfolio_manager.get_portfolio(portfolio_id)
+        
+        # Hiển thị thông tin danh mục trong sidebar
+        if portfolio_info:
+            st.sidebar.markdown("### 📋 Thông tin Danh mục")
+            st.sidebar.write(f"**Tên**: {portfolio_info['name']}")
+            st.sidebar.write(f"**Chiến lược**: {portfolio_info['strategy']}")
+            st.sidebar.write(f"**Vốn ban đầu**: {portfolio_info['initial_cash']:,.0f} VNĐ")
+            st.sidebar.write(f"**Tạo ngày**: {portfolio_info['created_date'].split(' ')[0]}")
+        
+        # Lấy trading history của danh mục được chọn
+        trading_history = portfolio_manager.get_trading_history(portfolio_id)
+        if trading_history is None:
+            st.error("❌ Không thể tải lịch sử giao dịch của danh mục này!")
+            return
+            
         current_holdings = trading_history.get_current_holdings()
         
         # Sidebar - Thống kê và quản lý
@@ -320,23 +359,19 @@ def render_portfolio_tracking_page():
         
         if st.sidebar.button("📈 Thêm giao dịch", type="primary"):
             if symbol and len(symbol) >= 3:
-                transaction_id = trading_history.add_transaction(
-                    symbol, transaction_type, quantity, price, fee=fee, note=note
+                transaction_id = portfolio_manager.add_transaction(
+                    portfolio_id, symbol, transaction_type, quantity, price, fee=fee, note=note
                 )
-                st.sidebar.success(f"✅ Đã thêm giao dịch #{transaction_id}")
-                st.rerun()
+                if transaction_id:
+                    st.sidebar.success(f"✅ Đã thêm giao dịch #{transaction_id}")
+                    st.rerun()
+                else:
+                    st.sidebar.error("❌ Có lỗi khi thêm giao dịch")
             else:
                 st.sidebar.error("❌ Mã cổ phiếu không hợp lệ")
         
         if not current_holdings:
             st.warning("⚠️ Chưa có cổ phiếu nào trong danh mục")
-            st.info("💡 Hãy thêm giao dịch đầu tiên bằng form bên trái!")
-            
-            # Tạo dữ liệu mẫu
-            if st.button("🎯 Tạo dữ liệu mẫu để demo"):
-                trading_history.add_sample_data()
-                st.success("✅ Đã tạo dữ liệu mẫu!")
-                st.rerun()
             return
         
         # Sidebar - Xóa danh mục
@@ -357,9 +392,12 @@ def render_portfolio_tracking_page():
                 
                 if st.sidebar.button("🗑️ Xóa khỏi danh mục", type="secondary"):
                     # Xóa tất cả giao dịch của cổ phiếu này
-                    trading_history.clear_symbol_transactions(selected_symbol)
-                    st.sidebar.success(f"✅ Đã xóa {selected_symbol} khỏi danh mục")
-                    st.rerun()
+                    result = portfolio_manager.clear_symbol_transactions(portfolio_id, selected_symbol)
+                    if result:
+                        st.sidebar.success(f"✅ Đã xóa {selected_symbol} khỏi danh mục")
+                        st.rerun()
+                    else:
+                        st.sidebar.error(f"❌ Có lỗi khi xóa {selected_symbol}")
         
         # Sidebar - Cài đặt theo dõi
         st.sidebar.markdown("---")
