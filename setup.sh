@@ -50,21 +50,10 @@ cat > run_app.sh << 'EOF'
 #!/bin/bash
 echo "🚀 Khởi động ứng dụng web..."
 source venv/bin/activate
-streamlit run web_app/app.py --server.port 8501 --server.headless true
+streamlit run web_app/main.py --server.port 8501 --server.headless true
 EOF
 
 chmod +x run_app.sh
-
-# Tạo file run examples
-cat > run_examples.sh << 'EOF'
-#!/bin/bash
-echo "🧪 Chạy các ví dụ..."
-source venv/bin/activate
-cd examples
-python basic_analysis.py
-EOF
-
-chmod +x run_examples.sh
 
 echo ""
 echo "✅ Thiết lập hoàn thành!"
@@ -72,7 +61,6 @@ echo ""
 echo "📋 Các bước tiếp theo:"
 echo "1. Kích hoạt virtual environment: source venv/bin/activate"
 echo "2. Chạy ứng dụng web: ./run_app.sh"
-echo "3. Hoặc chạy ví dụ: ./run_examples.sh"
 echo ""
 echo "🌐 Ứng dụng web sẽ chạy tại: http://localhost:8501"
 echo ""
