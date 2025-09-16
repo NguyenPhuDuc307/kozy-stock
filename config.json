@@ -1,0 +1,208 @@
+{
+  "api": {
+    "vnstock": {
+      "base_url": "https://finfo-api.vndirect.com.vn",
+      "timeout": 30,
+      "retry_attempts": 3,
+      "retry_delay": 1
+    }
+  },
+  "data": {
+    "cache_enabled": true,
+    "cache_duration_hours": 24,
+    "cache_directory": "cache",
+    "default_period": "1y",
+    "default_interval": "1d",
+    "supported_symbols": [
+      "VCB",
+      "BID",
+      "CTG",
+      "VPB",
+      "TCB",
+      "MBB",
+      "TPB",
+      "LPB",
+      "VIB",
+      "SHB",
+      "VNM",
+      "SAB",
+      "MSN",
+      "MWG",
+      "VRE",
+      "VIC",
+      "VHM",
+      "PDR",
+      "NVL",
+      "KDH",
+      "HPG",
+      "HSG",
+      "NKG",
+      "TLG",
+      "VGC",
+      "DXG",
+      "POM",
+      "DCM",
+      "DPM",
+      "NT2",
+      "GAS",
+      "PLX",
+      "BSR",
+      "PVS",
+      "PVD",
+      "PVC",
+      "PVB",
+      "CIG",
+      "OIL",
+      "PSH",
+      "CTD",
+      "BCM",
+      "HBC",
+      "LCG",
+      "CRE",
+      "IJC",
+      "SCS",
+      "PC1",
+      "C32",
+      "TV2",
+      "REE",
+      "POW",
+      "GEG",
+      "SBA",
+      "QCG",
+      "BWE",
+      "TDM",
+      "VSH",
+      "HNG",
+      "PC1"
+    ]
+  },
+  "technical_analysis": {
+    "indicators": {
+      "moving_averages": {
+        "sma_periods": [
+          5,
+          10,
+          20,
+          50,
+          100,
+          200
+        ],
+        "ema_periods": [
+          5,
+          10,
+          12,
+          20,
+          26,
+          50
+        ],
+        "wma_periods": [
+          20
+        ]
+      },
+      "momentum": {
+        "rsi_period": 14,
+        "stochastic_k": 14,
+        "stochastic_d": 3,
+        "williams_r_period": 14,
+        "roc_period": 12
+      },
+      "trend": {
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        "adx_period": 14,
+        "parabolic_sar": {
+          "af_start": 0.02,
+          "af_increment": 0.02,
+          "af_max": 0.2
+        }
+      },
+      "volatility": {
+        "bollinger_period": 20,
+        "bollinger_std": 2,
+        "atr_period": 14,
+        "keltner_period": 20,
+        "keltner_multiplier": 2
+      },
+      "volume": {
+        "volume_ma_periods": [
+          10,
+          20,
+          50
+        ],
+        "volume_roc_period": 12
+      }
+    },
+    "signals": {
+      "rsi_oversold": 30,
+      "rsi_overbought": 70,
+      "stoch_oversold": 20,
+      "stoch_overbought": 80,
+      "bb_squeeze_threshold": 0.2
+    }
+  },
+  "backtesting": {
+    "initial_capital": 100000000,
+    "commission": 0.0015,
+    "slippage": 0.001,
+    "position_sizing": {
+      "max_position_size": 0.2,
+      "risk_per_trade": 0.02
+    },
+    "risk_management": {
+      "max_drawdown": 0.2,
+      "stop_loss": 0.05,
+      "take_profit": 0.1
+    }
+  },
+  "charting": {
+    "default_height": 800,
+    "colors": {
+      "bullish": "#26a69a",
+      "bearish": "#ef5350",
+      "volume_up": "green",
+      "volume_down": "red",
+      "ma_colors": [
+        "blue",
+        "orange",
+        "red",
+        "purple",
+        "brown"
+      ],
+      "bb_color": "rgba(173,204,255,0.5)"
+    },
+    "indicators_to_show": [
+      "sma_20",
+      "sma_50",
+      "rsi",
+      "macd"
+    ],
+    "template": "plotly_white"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file_enabled": true,
+    "file_path": "logs/stock_analysis.log",
+    "max_file_size": "10MB",
+    "backup_count": 5
+  },
+  "web_app": {
+    "title": "Hệ thống phân tích chứng khoán Việt Nam",
+    "page_icon": "📊",
+    "layout": "wide",
+    "sidebar_state": "expanded",
+    "theme": {
+      "primaryColor": "#FF6B6B",
+      "backgroundColor": "#FFFFFF",
+      "secondaryBackgroundColor": "#F0F2F6",
+      "textColor": "#262730"
+    }
+  },
+  "performance": {
+    "max_data_points": 10000,
+    "parallel_processing": true,
+    "max_workers": 4,
+    "memory_limit_mb": 1024
+  }
+}
