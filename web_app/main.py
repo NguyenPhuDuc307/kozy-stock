@@ -33,6 +33,10 @@ def main():
     """
     
     # Define page functions
+    def home_page():
+        """Home page function for st.Page"""
+        exec(open("web_app/pages/home.py").read())
+    
     def stock_analysis_page():
         """Stock analysis page function for st.Page"""
         exec(open("web_app/pages/stock_analysis.py").read())
@@ -55,6 +59,9 @@ def main():
     
     # Create pages using st.Page
     pages = {
+        "Trang chủ": [
+            st.Page(home_page, title="Tổng quan thị trường", icon="🏠"),
+        ],
         "Phân tích": [
             st.Page(stock_analysis_page, title="Phân tích kỹ thuật", icon="📈"),
             st.Page(market_scanner_page, title="Quét thị trường", icon="🔍"),

@@ -71,16 +71,6 @@ def render_market_scanner_page():
         # Landing page - hiển thị khi chưa quét
         if not scan_clicked:
             st.markdown("""
-            ## 🔍 Quét thị trường - Market Scanner
-            
-            Công cụ quét thị trường giúp bạn tìm kiếm các cơ hội đầu tư tốt nhất dựa trên:
-            
-            ### ✨ Tính năng chính:
-            - 📊 **Phân tích kỹ thuật tự động** - Quét các chỉ báo RSI, MACD, MA
-            - 🎯 **Tín hiệu mua/bán** - Đưa ra khuyến nghị dựa trên thuật toán
-            - 📈 **Đánh giá thanh khoản** - Phân tích khối lượng giao dịch
-            - 🏆 **Xếp hạng cổ phiếu** - Điểm số tổng hợp từ -1.0 đến 1.0
-            
             ### 📁 Danh mục có sẵn:
             """)
             

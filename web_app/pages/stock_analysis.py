@@ -100,7 +100,7 @@ def render_stock_analysis_page():
             with st.spinner("Đang tải thông tin cơ bản..."):
                 try:
                     end_date = datetime.now()
-                    start_date = end_date - timedelta(days=7)  # Chỉ lấy 7 ngày cho preview
+                    start_date = end_date - timedelta(days=30)  # Chỉ lấy 30 ngày cho preview
                     start_str = start_date.strftime("%Y-%m-%d")
                     end_str = end_date.strftime("%Y-%m-%d")
                     
@@ -127,14 +127,14 @@ def render_stock_analysis_page():
                         
                         with col3:
                             high_52w = df_preview['high'].max()
-                            st.metric("📈 Cao nhất (7 ngày)", f"{high_52w:,.0f} VND")
+                            st.metric("📈 Cao nhất (30 ngày)", f"{high_52w:,.0f} VND")
                         
                         with col4:
                             low_52w = df_preview['low'].min()
-                            st.metric("📉 Thấp nhất (7 ngày)", f"{low_52w:,.0f} VND")
+                            st.metric("📉 Thấp nhất (30 ngày)", f"{low_52w:,.0f} VND")
                         
                         st.markdown("---")
-                        st.markdown("### 📈 Biểu đồ giá 7 ngày gần nhất")
+                        st.markdown("### 📈 Biểu đồ giá 30 ngày gần nhất")
                         
                         # Simple price chart
                         import plotly.graph_objects as go
@@ -152,7 +152,7 @@ def render_stock_analysis_page():
                         )
                         
                         fig_simple.update_layout(
-                            title=f"Biểu đồ nến {selected_symbol} - 7 ngày gần nhất",
+                            title=f"Biểu đồ nến {selected_symbol} - 30 ngày gần nhất",
                             xaxis_rangeslider_visible=False,
                             height=400,
                             template="plotly_white"
