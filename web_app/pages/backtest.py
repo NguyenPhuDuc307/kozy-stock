@@ -59,7 +59,7 @@ def render_backtest_page():
     
     period = st.selectbox(
         "Thời gian:",
-        ["6 tháng", "1 năm", "2 năm", "3 năm"],
+        ["3 tháng", "6 tháng", "1 năm", "2 năm", "3 năm"],
         index=1
     )
     
@@ -153,6 +153,7 @@ def render_backtest_page():
                 
                 # Calculate backtest period
                 period_map = {
+                    "3 tháng": 90,
                     "6 tháng": 180,
                     "1 năm": 365,
                     "2 năm": 730,
@@ -333,7 +334,14 @@ def render_backtest_page():
                     st.metric("Buy & Hold", f"{buy_hold_return:.2f}%")
                 
                 with col3:
-                    st.metric("Vốn cuối kỳ", f"{final_value:,.0f} VND")
+                    # Format large numbers more compactly
+                    if final_value >= 1_000_000_000:
+                        formatted_value = f"{final_value/1_000_000_000:.1f}B VND"
+                    elif final_value >= 1_000_000:
+                        formatted_value = f"{final_value/1_000_000:.1f}M VND"
+                    else:
+                        formatted_value = f"{final_value:,.0f} VND"
+                    st.metric("Vốn cuối kỳ", formatted_value)
                 
                 with col4:
                     st.metric("Số giao dịch", f"{len(trades)}")
@@ -362,7 +370,7 @@ def render_backtest_page():
                     shared_xaxes=True,
                     vertical_spacing=0.1,
                     subplot_titles=('Giá trị danh mục', 'Giá cổ phiếu & Tín hiệu'),
-                    row_weights=[0.6, 0.4]
+                    row_heights=[0.6, 0.4]
                 )
                 
                 # Portfolio value

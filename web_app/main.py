@@ -35,19 +35,19 @@ def main():
     # Define page functions
     def stock_analysis_page():
         """Stock analysis page function for st.Page"""
-        exec(open("/Users/ducnp/Projects/vnstock/kozy-stock/web_app/pages/stock_analysis.py").read())
+        exec(open("web_app/pages/stock_analysis.py").read())
     
     def market_scanner_page():
         """Market scanner page function for st.Page"""
-        exec(open("/Users/ducnp/Projects/vnstock/kozy-stock/web_app/pages/market_scanner.py").read())
+        exec(open("web_app/pages/market_scanner.py").read())
     
     def stock_comparison_page():
         """Stock comparison page function for st.Page"""
-        exec(open("/Users/ducnp/Projects/vnstock/kozy-stock/web_app/pages/stock_comparison.py").read())
+        exec(open("web_app/pages/stock_comparison.py").read())
     
     def backtest_page():
         """Backtest page function for st.Page"""
-        exec(open("/Users/ducnp/Projects/vnstock/kozy-stock/web_app/pages/backtest.py").read())
+        exec(open("web_app/pages/backtest.py").read())
     
     # Create pages using st.Page
     pages = {

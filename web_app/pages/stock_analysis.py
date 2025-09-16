@@ -149,25 +149,31 @@ def render_stock_analysis_page():
         if analyze_clicked:
             with st.spinner("Đang phân tích..."):
                 try:
-                    # Calculate date range
+                    # Calculate date range với thêm dữ liệu trước đó để tính chỉ báo
                     end_date = datetime.now()
-                    start_date = end_date - timedelta(days=days)
+                    # Thêm 200 ngày để có đủ dữ liệu cho các chỉ báo như SMA 200
+                    extended_days = days + 200
+                    start_date = end_date - timedelta(days=extended_days)
                     start_str = start_date.strftime("%Y-%m-%d")
                     end_str = end_date.strftime("%Y-%m-%d")
                     
-                    # Get data
-                    df = data_provider.get_historical_data(selected_symbol, start_str, end_str)
+                    # Get extended data for indicator calculation
+                    df_extended = data_provider.get_historical_data(selected_symbol, start_str, end_str)
                     
-                    if df is None or df.empty:
+                    if df_extended is None or df_extended.empty:
                         st.error(f"❌ Không thể lấy dữ liệu cho {selected_symbol}")
                         return
                     
-                    # Calculate technical indicators
-                    df_with_indicators = indicators.calculate_all(df)
+                    # Calculate technical indicators on extended data
+                    df_with_indicators_extended = indicators.calculate_all(df_extended)
                     
-                    if df_with_indicators is None or df_with_indicators.empty:
+                    if df_with_indicators_extended is None or df_with_indicators_extended.empty:
                         st.error("❌ Lỗi khi tính toán chỉ báo kỹ thuật")
                         return
+                    
+                    # Cắt về period người dùng chọn (lấy các ngày cuối)
+                    df_with_indicators = df_with_indicators_extended.tail(days)
+                    df = df_with_indicators[['open', 'high', 'low', 'close', 'volume']].copy()
                     
                     # Get latest values
                     latest = df_with_indicators.iloc[-1]

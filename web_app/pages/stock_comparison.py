@@ -208,19 +208,19 @@ def render_comparison_page():
                 
                 with col2:
                     if correlation > 0.7:
-                        correlation_desc = "Tương quan cao"
+                        correlation_desc = "Cao"
                         color = "🔴"
                     elif correlation > 0.3:
-                        correlation_desc = "Tương quan trung bình"
+                        correlation_desc = "Trung bình"
                         color = "🟡"
                     else:
-                        correlation_desc = "Tương quan thấp"
+                        correlation_desc = "Thấp"
                         color = "🟢"
                     st.metric("Mức độ", f"{color} {correlation_desc}")
                 
                 with col3:
                     diversification = "Tốt" if correlation < 0.5 else "Kém"
-                    st.metric("Hiệu quả đa dạng hóa", diversification)
+                    st.metric("Đa dạng hóa", diversification)
                 
                 # Winner analysis
                 st.markdown("## 🏆 Kết luận")

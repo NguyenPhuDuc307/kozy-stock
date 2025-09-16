@@ -410,6 +410,39 @@ class TechnicalIndicators:
         }
         
         return descriptions.get(indicator, f'Chỉ báo {indicator}')
+    
+    # Helper methods for backward compatibility
+    def sma(self, series: pd.Series, period: int) -> pd.Series:
+        """
+        Simple Moving Average helper method for backward compatibility
+        """
+        return series.rolling(window=period).mean()
+    
+    def rsi(self, series: pd.Series, period: int = 14) -> pd.Series:
+        """
+        RSI helper method for backward compatibility
+        """
+        delta = series.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        return 100 - (100 / (1 + rs))
+    
+    def macd(self, series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.DataFrame:
+        """
+        MACD helper method for backward compatibility
+        """
+        ema_fast = series.ewm(span=fast).mean()
+        ema_slow = series.ewm(span=slow).mean()
+        macd_line = ema_fast - ema_slow
+        signal_line = macd_line.ewm(span=signal).mean()
+        histogram = macd_line - signal_line
+        
+        return pd.DataFrame({
+            'macd': macd_line,
+            'signal': signal_line,
+            'histogram': histogram
+        })
 
 # Test module
 if __name__ == "__main__":
