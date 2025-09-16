@@ -106,6 +106,10 @@ def render_stock_analysis_page():
         )
         days = period_options[selected_period_name]
         
+        # Technical indicators settings
+        st.sidebar.markdown("### 📊 Chỉ báo kỹ thuật")
+        show_ichimoku = st.sidebar.checkbox("🌤️ Hiển thị Ichimoku Cloud", value=True)
+        
         # Analysis button
         analyze_clicked = st.sidebar.button("📊 Phân tích", type="primary")
         
@@ -292,6 +296,70 @@ def render_stock_analysis_page():
                             row=1, col=1
                         )
                     
+                    # Ichimoku Cloud
+                    if show_ichimoku and all(col in df_with_indicators.columns for col in ['tenkan_sen', 'kijun_sen', 'senkou_span_a', 'senkou_span_b', 'chikou_span']):
+                        # Tenkan-sen (Conversion Line)
+                        fig_price.add_trace(
+                            go.Scatter(
+                                x=df_with_indicators.index,
+                                y=df_with_indicators['tenkan_sen'],
+                                name='Tenkan-sen',
+                                line=dict(color='red', width=1),
+                                showlegend=True
+                            ),
+                            row=1, col=1
+                        )
+                        
+                        # Kijun-sen (Base Line)
+                        fig_price.add_trace(
+                            go.Scatter(
+                                x=df_with_indicators.index,
+                                y=df_with_indicators['kijun_sen'],
+                                name='Kijun-sen',
+                                line=dict(color='blue', width=1),
+                                showlegend=True
+                            ),
+                            row=1, col=1
+                        )
+                        
+                        # Senkou Span A (Leading Span A)
+                        fig_price.add_trace(
+                            go.Scatter(
+                                x=df_with_indicators.index,
+                                y=df_with_indicators['senkou_span_a'],
+                                name='Senkou Span A',
+                                line=dict(color='green', width=1),
+                                showlegend=True
+                            ),
+                            row=1, col=1
+                        )
+                        
+                        # Senkou Span B (Leading Span B) with cloud fill
+                        fig_price.add_trace(
+                            go.Scatter(
+                                x=df_with_indicators.index,
+                                y=df_with_indicators['senkou_span_b'],
+                                name='Senkou Span B',
+                                line=dict(color='orange', width=1),
+                                fill='tonexty',  # Fill between Senkou Span A and B
+                                fillcolor='rgba(255,215,0,0.2)',  # Light gold color for the cloud
+                                showlegend=True
+                            ),
+                            row=1, col=1
+                        )
+                        
+                        # Chikou Span (Lagging Span)
+                        fig_price.add_trace(
+                            go.Scatter(
+                                x=df_with_indicators.index,
+                                y=df_with_indicators['chikou_span'],
+                                name='Chikou Span',
+                                line=dict(color='purple', width=1, dash='dot'),
+                                showlegend=True
+                            ),
+                            row=1, col=1
+                        )
+                    
                     # Volume
                     colors = ['#26a69a' if close >= open else '#ef5350' 
                               for close, open in zip(df_with_indicators['close'], df_with_indicators['open'])]
@@ -469,6 +537,37 @@ def render_stock_analysis_page():
                             macd_signal = "Mua" if latest['macd'] > latest['macd_signal'] else "Bán"
                             trend_data.append(["MACD", f"{latest['macd']:.3f}", macd_signal])
                         
+                        # Ichimoku Cloud Analysis
+                        if all(col in latest for col in ['tenkan_sen', 'kijun_sen', 'senkou_span_a', 'senkou_span_b']) and \
+                           all(pd.notna(latest[col]) for col in ['tenkan_sen', 'kijun_sen', 'senkou_span_a', 'senkou_span_b']):
+                            
+                            # Tenkan-sen vs Kijun-sen
+                            if latest['tenkan_sen'] > latest['kijun_sen']:
+                                tk_signal = "Tăng"
+                            else:
+                                tk_signal = "Giảm"
+                            trend_data.append(["Tenkan/Kijun", f"{latest['tenkan_sen']:,.0f}/{latest['kijun_sen']:,.0f}", tk_signal])
+                            
+                            # Price vs Cloud (Kumo)
+                            cloud_top = max(latest['senkou_span_a'], latest['senkou_span_b'])
+                            cloud_bottom = min(latest['senkou_span_a'], latest['senkou_span_b'])
+                            current_price = latest['close']
+                            
+                            if current_price > cloud_top:
+                                cloud_signal = "Trên mây (Tăng)"
+                            elif current_price < cloud_bottom:
+                                cloud_signal = "Dưới mây (Giảm)"
+                            else:
+                                cloud_signal = "Trong mây (Biến động)"
+                            trend_data.append(["Vị trí vs Cloud", f"{current_price:,.0f}", cloud_signal])
+                            
+                            # Cloud direction
+                            if latest['senkou_span_a'] > latest['senkou_span_b']:
+                                cloud_color = "Xanh (Tích cực)"
+                            else:
+                                cloud_color = "Đỏ (Tiêu cực)"
+                            trend_data.append(["Màu Cloud", f"A:{latest['senkou_span_a']:,.0f}/B:{latest['senkou_span_b']:,.0f}", cloud_color])
+                        
                         # Bollinger Bands
                         if 'bb_percent' in latest and pd.notna(latest['bb_percent']):
                             if latest['bb_percent'] > 80:
@@ -537,6 +636,19 @@ def render_stock_analysis_page():
                         # ATR (Average True Range)
                         if 'atr' in latest and pd.notna(latest['atr']):
                             momentum_data.append(["ATR", f"{latest['atr']:.1f}", "Độ biến động"])
+                        
+                        # Chikou Span (Ichimoku - Lagging Line)
+                        if 'chikou_span' in latest and pd.notna(latest['chikou_span']):
+                            # So sánh Chikou Span với giá 26 ngày trước
+                            if len(df_with_indicators) >= 27:
+                                price_26_ago = df_with_indicators.iloc[-27]['close']
+                                if latest['chikou_span'] > price_26_ago:
+                                    chikou_signal = "Tích cực"
+                                elif latest['chikou_span'] < price_26_ago:
+                                    chikou_signal = "Tiêu cực"
+                                else:
+                                    chikou_signal = "Trung tính"
+                                momentum_data.append(["Chikou Span", f"{latest['chikou_span']:,.0f}", chikou_signal])
                         
                         if momentum_data:
                             momentum_df = pd.DataFrame(momentum_data, columns=['Chỉ báo', 'Giá trị', 'Tín hiệu'])

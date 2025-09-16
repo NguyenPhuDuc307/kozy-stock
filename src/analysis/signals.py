@@ -79,6 +79,9 @@ class TradingSignals:
             # Stochastic Signals
             df_result = self.stochastic_signals(df_result)
             
+            # Ichimoku Signals
+            df_result = self.ichimoku_signals(df_result)
+            
             # Volume Signals
             df_result = self.volume_signals(df_result)
             
@@ -242,6 +245,78 @@ class TradingSignals:
         
         return df
     
+    def ichimoku_signals(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Tín hiệu từ Ichimoku Cloud
+        """
+        required_cols = ['tenkan_sen', 'kijun_sen', 'senkou_span_a', 'senkou_span_b', 'chikou_span']
+        if not all(col in df.columns for col in required_cols):
+            return df
+        
+        # Tenkan-sen vs Kijun-sen crossover
+        df['tenkan_kijun_bullish'] = (
+            (df['tenkan_sen'] > df['kijun_sen']) & 
+            (df['tenkan_sen'].shift(1) <= df['kijun_sen'].shift(1))
+        )
+        df['tenkan_kijun_bearish'] = (
+            (df['tenkan_sen'] < df['kijun_sen']) & 
+            (df['tenkan_sen'].shift(1) >= df['kijun_sen'].shift(1))
+        )
+        
+        # Price vs Cloud (Kumo)
+        df['cloud_top'] = df[['senkou_span_a', 'senkou_span_b']].max(axis=1)
+        df['cloud_bottom'] = df[['senkou_span_a', 'senkou_span_b']].min(axis=1)
+        
+        df['price_above_cloud'] = df['close'] > df['cloud_top']
+        df['price_below_cloud'] = df['close'] < df['cloud_bottom']
+        df['price_in_cloud'] = (df['close'] >= df['cloud_bottom']) & (df['close'] <= df['cloud_top'])
+        
+        # Cloud breakout signals
+        df['cloud_breakout_bullish'] = (
+            (df['close'] > df['cloud_top']) & 
+            (df['close'].shift(1) <= df['cloud_top'].shift(1))
+        )
+        df['cloud_breakout_bearish'] = (
+            (df['close'] < df['cloud_bottom']) & 
+            (df['close'].shift(1) >= df['cloud_bottom'].shift(1))
+        )
+        
+        # Cloud color (direction)
+        df['cloud_bullish'] = df['senkou_span_a'] > df['senkou_span_b']
+        df['cloud_bearish'] = df['senkou_span_a'] < df['senkou_span_b']
+        
+        # Chikou Span signals (lagging span)
+        df['chikou_above_price'] = df['chikou_span'] > df['close'].shift(26)
+        df['chikou_below_price'] = df['chikou_span'] < df['close'].shift(26)
+        
+        # Strong Ichimoku signals (multiple confirmations)
+        df['ichimoku_strong_bullish'] = (
+            df['tenkan_kijun_bullish'] & 
+            df['price_above_cloud'] & 
+            df['cloud_bullish'] &
+            df['chikou_above_price']
+        )
+        df['ichimoku_strong_bearish'] = (
+            df['tenkan_kijun_bearish'] & 
+            df['price_below_cloud'] & 
+            df['cloud_bearish'] &
+            df['chikou_below_price']
+        )
+        
+        # Trend continuation signals
+        df['ichimoku_uptrend'] = (
+            df['price_above_cloud'] & 
+            df['tenkan_sen'] > df['kijun_sen'] &
+            df['cloud_bullish']
+        )
+        df['ichimoku_downtrend'] = (
+            df['price_below_cloud'] & 
+            df['tenkan_sen'] < df['kijun_sen'] &
+            df['cloud_bearish']
+        )
+        
+        return df
+    
     def volume_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Tín hiệu từ khối lượng
@@ -324,6 +399,7 @@ class TradingSignals:
             'rsi_buy_signal', 'rsi_bullish_divergence',
             'macd_bullish_cross', 'macd_hist_increasing',
             'bb_lower_touch', 'stoch_bullish_cross',
+            'tenkan_kijun_bullish', 'cloud_breakout_bullish', 'ichimoku_strong_bullish', 'ichimoku_uptrend',
             'bullish_volume', 'hammer', 'bullish_engulfing'
         ]
         
@@ -333,6 +409,7 @@ class TradingSignals:
             'rsi_sell_signal', 'rsi_bearish_divergence',
             'macd_bearish_cross', 'macd_hist_decreasing',
             'bb_upper_touch', 'stoch_bearish_cross',
+            'tenkan_kijun_bearish', 'cloud_breakout_bearish', 'ichimoku_strong_bearish', 'ichimoku_downtrend',
             'bearish_volume', 'shooting_star', 'bearish_engulfing'
         ]
         
@@ -499,6 +576,41 @@ class TradingSignals:
                     reasons.append("Giá chạm Bollinger Band trên")
                 else:
                     signals_count['HOLD'] += 1
+            
+            # Ichimoku signals
+            if all(col in latest for col in ['tenkan_sen', 'kijun_sen', 'senkou_span_a', 'senkou_span_b']):
+                tenkan = latest['tenkan_sen']
+                kijun = latest['kijun_sen']
+                close = latest['close']
+                cloud_top = max(latest['senkou_span_a'], latest['senkou_span_b'])
+                cloud_bottom = min(latest['senkou_span_a'], latest['senkou_span_b'])
+                
+                # Tenkan vs Kijun
+                if tenkan > kijun:
+                    signals_count['BUY'] += 1
+                    reasons.append("Tenkan-sen trên Kijun-sen")
+                else:
+                    signals_count['SELL'] += 1
+                    reasons.append("Tenkan-sen dưới Kijun-sen")
+                
+                # Price vs Cloud
+                if close > cloud_top:
+                    signals_count['BUY'] += 1
+                    reasons.append("Giá trên Ichimoku Cloud")
+                elif close < cloud_bottom:
+                    signals_count['SELL'] += 1
+                    reasons.append("Giá dưới Ichimoku Cloud")
+                else:
+                    signals_count['HOLD'] += 1
+                    reasons.append("Giá trong Ichimoku Cloud")
+                
+                # Cloud color
+                if latest['senkou_span_a'] > latest['senkou_span_b']:
+                    signals_count['BUY'] += 1
+                    reasons.append("Ichimoku Cloud màu xanh")
+                else:
+                    signals_count['SELL'] += 1
+                    reasons.append("Ichimoku Cloud màu đỏ")
             
             # Xác định tín hiệu chủ đạo
             total_signals = sum(signals_count.values())
