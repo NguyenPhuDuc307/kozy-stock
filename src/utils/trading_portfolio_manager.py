@@ -274,13 +274,45 @@ class TradingPortfolioManager:
         holdings = trading_history.get_current_holdings()
         for symbol, data in holdings.items():
             total_invested += data["total_cost"]
-            # TODO: Cần tích hợp với API để lấy giá hiện tại
-            # Tạm thời sử dụng avg_price
-            total_current_value += data["shares"] * data["avg_price"]
+            
+            # Lấy giá hiện tại thực tế từ API
+            try:
+                # Import vnstock để lấy giá hiện tại
+                import vnstock as vn
+                from datetime import datetime as dt, timedelta
+                
+                # Lấy dữ liệu giá gần nhất
+                end_date = dt.now()
+                start_date = end_date - timedelta(days=7)  # Lấy 7 ngày gần nhất
+                
+                # Sử dụng API đúng của vnstock 4.x
+                quote = vn.Quote(symbol=symbol, source='VCI')
+                stock_data = quote.history(
+                    start=start_date.strftime('%Y-%m-%d'),
+                    end=end_date.strftime('%Y-%m-%d')
+                )
+                
+                if stock_data is not None and not stock_data.empty:
+                    # API trả về giá theo nghìn VND, cần nhân 1000 để về VND đầy đủ
+                    api_price = stock_data['close'].iloc[-1]
+                    current_price = api_price * 1000
+                    total_current_value += data["shares"] * current_price
+                else:
+                    # Fallback sử dụng avg_price nếu không lấy được giá mới
+                    total_current_value += data["shares"] * data["avg_price"]
+                    
+            except Exception as e:
+                # Fallback sử dụng avg_price nếu có lỗi
+                print(f"Lỗi lấy giá hiện tại cho {symbol}: {e}")
+                total_current_value += data["shares"] * data["avg_price"]
         
         portfolio["total_invested"] = total_invested
         portfolio["total_profit_loss"] = total_current_value - total_invested
-        portfolio["total_value"] = total_current_value + portfolio["current_cash"]
+        
+        # Tính current_cash = initial_cash - total_invested
+        current_cash = portfolio["initial_cash"] - total_invested
+        portfolio["current_cash"] = current_cash
+        portfolio["total_value"] = total_current_value + current_cash
         portfolio["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         self._save_portfolios()
@@ -373,6 +405,19 @@ class TradingPortfolioManager:
             "last_updated": portfolio["last_updated"]
         }
     
+    def refresh_all_portfolios(self):
+        """Cập nhật lại thống kê cho tất cả các danh mục"""
+        updated_count = 0
+        for portfolio_id in self.portfolios_data["portfolios"].keys():
+            portfolio = self.portfolios_data["portfolios"][portfolio_id]
+            if portfolio.get("is_active", True):  # Chỉ cập nhật những portfolio đang hoạt động
+                print(f"Đang cập nhật danh mục: {portfolio['name']}")
+                self._update_portfolio_stats(portfolio_id)
+                updated_count += 1
+        
+        print(f"✅ Đã cập nhật {updated_count} danh mục thành công!")
+        return True
+
     def add_sample_portfolios(self):
         """Thêm dữ liệu mẫu cho demo"""
         # Danh mục cổ phiếu ngân hàng

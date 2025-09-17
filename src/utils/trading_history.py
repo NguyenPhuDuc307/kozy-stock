@@ -157,22 +157,58 @@ class TradingHistory:
         return current_holdings
     
     def get_portfolio_summary(self) -> pd.DataFrame:
-        """Lấy tóm tắt danh mục đầu tư dạng DataFrame"""
+        """Lấy tóm tắt danh mục đầu tư dạng DataFrame với giá thực tế"""
         holdings = self.get_current_holdings()
         
         if not holdings:
             return pd.DataFrame()
-        
+
         portfolio_data = []
         for symbol, data in holdings.items():
+            shares = data["shares"]
+            avg_price = data["avg_price"]
+            total_cost = data["total_cost"]
+            
+            # Lấy giá hiện tại từ vnstock API
+            try:
+                import vnstock
+                from datetime import datetime, timedelta
+                
+                quote = vnstock.Quote(symbol=symbol, source='VCI')
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=5)
+                
+                stock_data = quote.history(
+                    start=start_date.strftime('%Y-%m-%d'),
+                    end=end_date.strftime('%Y-%m-%d')
+                )
+                
+                if stock_data is not None and not stock_data.empty:
+                    # API trả về giá theo nghìn VND, cần nhân 1000 để về VND đầy đủ
+                    # để khớp với avg_price trong holdings (đã là VND đầy đủ)
+                    api_price = stock_data['close'].iloc[-1]
+                    current_price = api_price * 1000
+                else:
+                    # Fallback sử dụng avg_price
+                    current_price = avg_price
+                    
+            except Exception as e:
+                # Fallback sử dụng avg_price nếu có lỗi
+                current_price = avg_price
+                
+            # Tính toán giá trị hiện tại và lãi/lỗ
+            current_value = current_price * shares
+            profit_loss = current_value - total_cost
+            profit_loss_pct = (profit_loss / total_cost) * 100 if total_cost > 0 else 0
+            
             portfolio_data.append({
                 "Symbol": symbol,
-                "Shares": data["shares"],
-                "Avg_Price": data["avg_price"],
-                "Total_Cost": data["total_cost"],
-                "Current_Value": 0,  # Sẽ được cập nhật từ API
-                "Profit_Loss": 0,    # Sẽ được tính toán
-                "Profit_Loss_Pct": 0  # Sẽ được tính toán
+                "Shares": shares,
+                "Avg_Price": f"{avg_price:,.0f}",
+                "Total_Cost": f"{total_cost:,.0f}",
+                "Current_Value": f"{current_value:,.0f}",
+                "Profit_Loss": f"{profit_loss:+,.0f}",
+                "Profit_Loss_Pct": f"{profit_loss_pct:+.2f}%"
             })
         
         return pd.DataFrame(portfolio_data)

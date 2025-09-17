@@ -436,7 +436,7 @@ def render_market_scanner_page():
                                             xaxis_title='RSI',
                                             yaxis_title='Số lượng cổ phiếu'
                                         )
-                                        st.plotly_chart(fig_rsi, use_container_width=True, key="rsi_distribution_chart")
+                                        st.plotly_chart(fig_rsi, width='stretch', key="rsi_distribution_chart")
                                 
                                 with col2:
                                     # Price Change Distribution
@@ -452,7 +452,7 @@ def render_market_scanner_page():
                                         xaxis_title='% Thay đổi',
                                         yaxis_title='Số lượng cổ phiếu'
                                     )
-                                    st.plotly_chart(fig_change, use_container_width=True, key="price_change_distribution_chart")
+                                    st.plotly_chart(fig_change, width='stretch', key="price_change_distribution_chart")
                             
                             with tab4:
                                 # Strong signals analysis

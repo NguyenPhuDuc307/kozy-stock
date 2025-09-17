@@ -34,13 +34,24 @@ def render_portfolio_management_page():
         # Tạo DataFrame để hiển thị
         portfolio_data = []
         for portfolio in portfolios:
+            # Tính lãi/lỗ từ holdings để đảm bảo consistency
+            holdings_df = portfolio_manager.get_portfolio_summary(portfolio["id"])
+            if holdings_df is not None and not holdings_df.empty:
+                total_profit_loss_from_holdings = 0
+                for _, row in holdings_df.iterrows():
+                    # Parse profit_loss string (format: "+1,234" or "-1,234") 
+                    profit_loss_str = row['Profit_Loss'].replace(',', '').replace('+', '')
+                    total_profit_loss_from_holdings += float(profit_loss_str)
+            else:
+                total_profit_loss_from_holdings = 0
+            
             portfolio_data.append({
                 "Tên danh mục": portfolio["name"],
                 "Mô tả": portfolio["description"][:50] + "..." if len(portfolio["description"]) > 50 else portfolio["description"],
                 "Chiến lược": portfolio["strategy"],
                 "Vốn ban đầu": f"{portfolio['initial_cash']:,.0f} VNĐ",
                 "Tổng đầu tư": f"{portfolio.get('total_invested', 0):,.0f} VNĐ",
-                "Lãi/Lỗ": f"{portfolio.get('total_profit_loss', 0):,.0f} VNĐ",
+                "Lãi/Lỗ": f"{total_profit_loss_from_holdings:+,.0f} VNĐ",
                 "Ngày tạo": portfolio["created_date"].split(" ")[0],
                 "ID": portfolio["id"]
             })
@@ -71,6 +82,19 @@ def render_portfolio_management_page():
             portfolio_info = portfolio_manager.get_portfolio(portfolio_id)
             
             if portfolio_info:
+                # Lấy holdings để tính toán chính xác từ cùng 1 nguồn
+                holdings_df = portfolio_manager.get_portfolio_summary(portfolio_id)
+                
+                # Tính tổng từ holdings_df để đảm bảo consistency
+                if holdings_df is not None and not holdings_df.empty:
+                    total_profit_loss_from_holdings = 0
+                    for _, row in holdings_df.iterrows():
+                        # Parse profit_loss string (format: "+1,234" or "-1,234") 
+                        profit_loss_str = row['Profit_Loss'].replace(',', '').replace('+', '')
+                        total_profit_loss_from_holdings += float(profit_loss_str)
+                else:
+                    total_profit_loss_from_holdings = 0
+                
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -80,14 +104,39 @@ def render_portfolio_management_page():
                 
                 with col2:
                     st.metric("💎 Tổng giá trị", f"{portfolio_info.get('total_value', 0):,.0f} VNĐ")
-                    profit_loss = portfolio_info.get('total_profit_loss', 0)
-                    st.metric("📊 Lãi/Lỗ", f"{profit_loss:,.0f} VNĐ", delta=f"{profit_loss:,.0f}")
+                    st.metric("📊 Lãi/Lỗ", f"{total_profit_loss_from_holdings:,.0f} VNĐ", delta=f"{total_profit_loss_from_holdings:,.0f}")
                 
                 # Hiển thị holdings
+                
                 holdings_df = portfolio_manager.get_portfolio_summary(portfolio_id)
                 if holdings_df is not None and not holdings_df.empty:
                     st.subheader("📊 Cổ phiếu đang nắm giữ")
-                    st.dataframe(holdings_df, use_container_width=True)
+                    
+                    # Style dataframe với màu sắc
+                    def color_profit_loss(val):
+                        """Tô màu cho cột lãi/lỗ"""
+                        if isinstance(val, str):
+                            # Xử lý cho Profit_Loss
+                            if val.replace(',', '').replace('+', '').replace('-', '').replace('.0', '').isdigit():
+                                if val.startswith('+') or (not val.startswith('-') and float(val.replace(',', '')) > 0):
+                                    return 'background-color: #d4edda; color: #155724; font-weight: bold'
+                                elif val.startswith('-'):
+                                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold'
+                            # Xử lý cho Profit_Loss_Pct  
+                            elif '%' in val:
+                                clean_val = val.replace('+', '').replace('%', '')
+                                if clean_val.startswith('-'):
+                                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold'
+                                else:
+                                    return 'background-color: #d4edda; color: #155724; font-weight: bold'
+                        return ''
+                    
+                    styled_df = holdings_df.style.map(
+                        color_profit_loss, 
+                        subset=['Profit_Loss', 'Profit_Loss_Pct']
+                    )
+                    
+                    st.dataframe(styled_df, use_container_width=True)
     
     def render_create_portfolio(portfolio_manager):
         """Form tạo danh mục mới"""
@@ -107,7 +156,7 @@ def render_portfolio_management_page():
                 initial_cash = st.number_input("💰 Vốn ban đầu (VNĐ)", min_value=0, value=10000000, step=1000000)
                 description = st.text_area("📋 Mô tả", placeholder="Mô tả về danh mục và mục tiêu đầu tư...")
             
-            submitted = st.form_submit_button("✅ Tạo danh mục", use_container_width=True)
+            submitted = st.form_submit_button("✅ Tạo danh mục", width='stretch')
             
             if submitted:
                 if not name.strip():
@@ -166,7 +215,7 @@ def render_portfolio_management_page():
                     with col2:
                         new_description = st.text_area("📋 Mô tả", value=portfolio_info["description"])
                     
-                    submitted = st.form_submit_button("💾 Cập nhật", use_container_width=True)
+                    submitted = st.form_submit_button("💾 Cập nhật", width='stretch')
                     
                     if submitted:
                         if not new_name.strip():
@@ -232,7 +281,7 @@ def render_portfolio_management_page():
                     placeholder=f"Gõ '{portfolio_info['name']}' để xác nhận"
                 )
                 
-                if st.button("🗑️ XÓA VĨNH VIỄN", type="primary", use_container_width=True):
+                if st.button("🗑️ XÓA VĨNH VIỄN", type="primary", width='stretch'):
                     if confirm_text == portfolio_info['name']:
                         success = portfolio_manager.delete_portfolio(portfolio_id)
                         if success:
@@ -323,6 +372,23 @@ def render_portfolio_management_page():
             "Chọn thao tác:",
             ["📋 Xem danh sách", "➕ Tạo mới", "✏️ Chỉnh sửa", "🗑️ Xóa", "📊 Thống kê"]
         )
+        
+        st.markdown("---")
+        st.subheader("🔄 Bảo trì")
+        
+        if st.button("🔄 Cập nhật giá hiện tại", width='stretch'):
+            with st.spinner("Đang cập nhật giá hiện tại cho tất cả danh mục..."):
+                try:
+                    success = portfolio_manager.refresh_all_portfolios()
+                    if success:
+                        st.success("✅ Đã cập nhật giá hiện tại thành công!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Có lỗi khi cập nhật!")
+                except Exception as e:
+                    st.error(f"❌ Lỗi: {str(e)}")
+        
+        st.caption("💡 Sử dụng nút này để cập nhật giá hiện tại từ thị trường")
     
     if action == "📋 Xem danh sách":
         render_portfolios_list(portfolio_manager)

@@ -189,19 +189,20 @@ def get_portfolio_data():
             )
             
             if data is not None and not data.empty:
-                current_price = data.iloc[-1]['close']
+                # API trả về giá theo nghìn VND, cần nhân 1000 để về VND đầy đủ
+                api_price = data.iloc[-1]['close']
+                current_price = api_price * 1000
             else:
-                # Fallback nếu không có dữ liệu từ API
-                current_price = holding_data["avg_price"] * random.uniform(0.95, 1.05)
+                # Fallback sử dụng avg_price (đã ở đơn vị VND đầy đủ)
+                current_price = holding_data["avg_price"]
             
             # Tính toán lợi nhuận dựa trên dữ liệu thực
             shares = holding_data["shares"]
             avg_price = holding_data["avg_price"]
             total_cost = holding_data["total_cost"]
             
-            # Nhân giá lên 1000 để hiển thị đúng đơn vị VND
-            current_price_display = current_price * 1000
-            current_value = current_price_display * shares
+            # Giá đã được convert về VND đầy đủ ở trên
+            current_value = current_price * shares
             profit_loss = current_value - total_cost
             profit_loss_pct = (profit_loss / total_cost) * 100 if total_cost > 0 else 0
             
@@ -353,7 +354,7 @@ def get_portfolio_data():
             portfolio_data.append({
                 'Symbol': symbol,
                 'Buy_Price': avg_price,
-                'Current_Price': current_price_display,
+                'Current_Price': current_price,
                 'Shares': shares,
                 'Total_Cost': total_cost,
                 'Current_Value': current_value,
@@ -370,10 +371,9 @@ def get_portfolio_data():
             avg_price = holding_data["avg_price"]
             total_cost = holding_data["total_cost"]
             
-            # Giả lập giá hiện tại
+            # Giả lập giá hiện tại (fallback)
             current_price = avg_price * random.uniform(0.9, 1.1)
-            current_price_display = current_price * 1000
-            current_value = current_price_display * shares
+            current_value = current_price * shares
             profit_loss = current_value - total_cost
             profit_loss_pct = (profit_loss / total_cost) * 100 if total_cost > 0 else 0
             
@@ -404,7 +404,7 @@ def get_portfolio_data():
             portfolio_data.append({
                 'Symbol': symbol,
                 'Buy_Price': avg_price,
-                'Current_Price': current_price_display,
+                'Current_Price': current_price,
                 'Shares': shares,
                 'Total_Cost': total_cost,
                 'Current_Value': current_value,
@@ -726,136 +726,107 @@ def render_portfolio_tracking_page():
                     )
                     
                     if data is not None and not data.empty:
-                        current_price = data.iloc[-1]['close']
+                        # API trả về giá theo nghìn VND, cần nhân 1000 để về VND đầy đủ
+                        current_price = data.iloc[-1]['close'] * 1000
                     else:
                         # Fallback nếu không có dữ liệu từ API
-                        current_price = holding_data["avg_price"] * random.uniform(0.95, 1.05)
+                        current_price = holding_data["avg_price"]
+                except Exception as e:
+                    # Fallback nếu có lỗi API
+                    current_price = holding_data["avg_price"]
+                
+                # Tính toán lợi nhuận dựa trên dữ liệu thực
+                shares = holding_data["shares"]
+                avg_price = holding_data["avg_price"]
+                total_cost = holding_data["total_cost"]
+                
+                # Tính current_value và profit_loss
+                current_value = current_price * shares
+                profit_loss = current_value - total_cost
+                profit_loss_pct = (profit_loss / total_cost) * 100 if total_cost > 0 else 0
+                
+                # Tính toán tín hiệu kỹ thuật thống nhất
+                if data is not None and not data.empty and len(data) >= 30:
+                    # Tính toán các chỉ báo kỹ thuật
+                    df_with_indicators = indicators.calculate_all(data)
                     
-                    # Tính toán lợi nhuận dựa trên dữ liệu thực
-                    shares = holding_data["shares"]
-                    avg_price = holding_data["avg_price"]
-                    total_cost = holding_data["total_cost"]
-                    
-                    # Nhân giá lên 1000 để hiển thị đúng đơn vị VND
-                    current_price_display = current_price * 1000
-                    current_value = current_price_display * shares
-                    profit_loss = current_value - total_cost
-                    profit_loss_pct = (profit_loss / total_cost) * 100 if total_cost > 0 else 0
-                    
-                    # Tính toán tín hiệu kỹ thuật thống nhất
-                    if data is not None and not data.empty and len(data) >= 30:
-                        # Tính toán các chỉ báo kỹ thuật
-                        df_with_indicators = indicators.calculate_all(data)
+                    if df_with_indicators is not None and not df_with_indicators.empty:
+                        # Sử dụng unified signal analyzer
+                        signal_analysis = signal_analyzer.analyze_comprehensive_signal(df_with_indicators)
                         
-                        if df_with_indicators is not None and not df_with_indicators.empty:
-                            # Sử dụng unified signal analyzer
-                            signal_analysis = signal_analyzer.analyze_comprehensive_signal(df_with_indicators)
+                        if signal_analysis:
+                            signal = signal_analysis['signal']
+                            technical_score = signal_analysis['confidence']
                             
-                            if signal_analysis:
-                                signal = signal_analysis['signal']
-                                technical_score = signal_analysis['confidence']
-                                
-                                # Map signal to recommendation
-                                if signal == "BUY":
-                                    if technical_score >= 0.7:
-                                        recommendation = "MUA MẠNH"
-                                    else:
-                                        recommendation = "MUA"
-                                elif signal == "SELL":
-                                    if technical_score >= 0.7:
-                                        recommendation = "BÁN MẠNH"
-                                    else:
-                                        recommendation = "BÁN"
+                            # Map signal to recommendation
+                            if signal == "BUY":
+                                if technical_score >= 0.7:
+                                    recommendation = "MUA MẠNH"
                                 else:
-                                    recommendation = "GIỮ"
+                                    recommendation = "MUA"
+                            elif signal == "SELL":
+                                if technical_score >= 0.7:
+                                    recommendation = "BÁN MẠNH"
+                                else:
+                                    recommendation = "BÁN"
                             else:
-                                # Fallback if signal generation fails
-                                signal = "HOLD"
-                                technical_score = 0.0
                                 recommendation = "GIỮ"
                         else:
-                            # Fallback if indicators calculation fails
+                            # Fallback if signal generation fails
                             signal = "HOLD"
                             technical_score = 0.0
                             recommendation = "GIỮ"
                     else:
-                        # Fallback for insufficient data - use simple MA analysis
-                        if data is not None and not data.empty and len(data) >= 5:
-                            prices = data['close'].values
-                            ma5 = prices[-5:].mean()
-                            
-                            if current_price > ma5 * 1.02:
-                                technical_score = 0.3
-                                signal = "BUY"
-                                recommendation = "MUA"
-                            elif current_price < ma5 * 0.98:
-                                technical_score = -0.3
-                                signal = "SELL"
-                                recommendation = "BÁN"
-                            else:
-                                technical_score = 0.0
-                                signal = "HOLD"
-                                recommendation = "GIỮ"
+                        # Fallback if indicators calculation fails
+                        signal = "HOLD"
+                        technical_score = 0.0
+                        recommendation = "GIỮ"
+                else:
+                    # Fallback for insufficient data - use simple MA analysis
+                    if data is not None and not data.empty and len(data) >= 5:
+                        prices = data['close'].values
+                        ma5 = prices[-5:].mean()
+                        
+                        if current_price > ma5 * 1.02:
+                            technical_score = 0.3
+                            signal = "BUY"
+                            recommendation = "MUA"
+                        elif current_price < ma5 * 0.98:
+                            technical_score = -0.3
+                            signal = "SELL"
+                            recommendation = "BÁN"
                         else:
-                            # Final fallback based on profit/loss
-                            if profit_loss_pct > 5:
-                                technical_score = 0.2
-                                signal = "HOLD"
-                                recommendation = "GIỮ"
-                            elif profit_loss_pct < -5:
-                                technical_score = -0.2
-                                signal = "HOLD"
-                                recommendation = "GIỮ"
-                            else:
-                                technical_score = 0.0
-                                signal = "HOLD"
-                                recommendation = "GIỮ"
-                    
-                    portfolio_data.append({
-                        'Symbol': symbol,
-                        'Buy_Price': avg_price,
-                        'Current_Price': current_price_display,
-                        'Shares': shares,
-                        'Total_Cost': total_cost,
-                        'Current_Value': current_value,
-                        'Profit_Loss': profit_loss,
-                        'Profit_Loss_Pct': profit_loss_pct,
-                        'Technical_Score': technical_score,
-                        'Signal': signal,
-                        'Recommendation': recommendation
-                    })
-                    
-                except Exception as e:
-                    # Nếu lỗi API, dùng dữ liệu từ holdings
-                    shares = holding_data["shares"]
-                    avg_price = holding_data["avg_price"]
-                    total_cost = holding_data["total_cost"]
-                    
-                    # Giả lập giá hiện tại
-                    current_price = avg_price * random.uniform(0.9, 1.1)
-                    current_price_display = current_price * 1000
-                    current_value = current_price_display * shares
-                    profit_loss = current_value - total_cost
-                    profit_loss_pct = (profit_loss / total_cost) * 100 if total_cost > 0 else 0
-                    
-                    # Default technical analysis
-                    technical_score = random.uniform(-0.5, 0.5)
-                    signal = "HOLD"
-                    recommendation = "GIỮ"
-                    
-                    portfolio_data.append({
-                        'Symbol': symbol,
-                        'Buy_Price': avg_price,
-                        'Current_Price': current_price_display,
-                        'Shares': shares,
-                        'Total_Cost': total_cost,
-                        'Current_Value': current_value,
-                        'Profit_Loss': profit_loss,
-                        'Profit_Loss_Pct': profit_loss_pct,
-                        'Technical_Score': technical_score,
-                        'Signal': signal,
-                        'Recommendation': recommendation
-                    })
+                            technical_score = 0.0
+                            signal = "HOLD"
+                            recommendation = "GIỮ"
+                    else:
+                        # Final fallback based on profit/loss
+                        if profit_loss_pct > 5:
+                            technical_score = 0.2
+                            signal = "HOLD"
+                            recommendation = "GIỮ"
+                        elif profit_loss_pct < -5:
+                            technical_score = -0.2
+                            signal = "HOLD"
+                            recommendation = "GIỮ"
+                        else:
+                            technical_score = 0.0
+                            signal = "HOLD"
+                            recommendation = "GIỮ"
+                
+                portfolio_data.append({
+                    'Symbol': symbol,
+                    'Buy_Price': avg_price,
+                    'Current_Price': current_price,
+                    'Shares': shares,
+                    'Total_Cost': total_cost,
+                    'Current_Value': current_value,
+                    'Profit_Loss': profit_loss,
+                    'Profit_Loss_Pct': profit_loss_pct,
+                    'Technical_Score': technical_score,
+                    'Signal': signal,
+                    'Recommendation': recommendation
+                })
             
             portfolio_data = pd.DataFrame(portfolio_data)
         
