@@ -1085,6 +1085,337 @@ def render_portfolio_tracking_page():
                     for _, stock in worst_performers.iterrows():
                         st.write(f"• {stock['Symbol']}: {stock['Profit_Loss_Pct']:+.2f}%")
         
+        # Transaction history management
+        st.markdown("---")
+        st.subheader("📋 Lịch sử Giao dịch")
+        
+        # Transaction history tabs
+        tab1, tab2, tab3 = st.tabs(["📖 Xem lịch sử", "✏️ Sửa giao dịch", "🗑️ Xóa giao dịch"])
+        
+        with tab1:
+            st.markdown("#### 📖 Lịch sử giao dịch của danh mục")
+            
+            # Get transaction history
+            transaction_history = trading_history.get_transactions_history()
+            
+            if transaction_history:
+                # Filter options
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    symbol_filter = st.selectbox(
+                        "Lọc theo mã CP:",
+                        ["Tất cả"] + list(current_holdings.keys()),
+                        key="history_symbol_filter"
+                    )
+                
+                with col2:
+                    type_filter = st.selectbox(
+                        "Loại giao dịch:",
+                        ["Tất cả", "BUY", "SELL"],
+                        key="history_type_filter"
+                    )
+                
+                with col3:
+                    sort_order = st.selectbox(
+                        "Sắp xếp:",
+                        ["Mới nhất", "Cũ nhất"],
+                        key="history_sort_order"
+                    )
+                
+                # Apply filters
+                filtered_transactions = transaction_history.copy()
+                
+                if symbol_filter != "Tất cả":
+                    filtered_transactions = [t for t in filtered_transactions if t['symbol'] == symbol_filter]
+                
+                if type_filter != "Tất cả":
+                    filtered_transactions = [t for t in filtered_transactions if t['type'] == type_filter]
+                
+                # Sort transactions
+                filtered_transactions.sort(
+                    key=lambda x: x['date'], 
+                    reverse=(sort_order == "Mới nhất")
+                )
+                
+                if filtered_transactions:
+                    # Display transactions table
+                    transaction_data = []
+                    for trans in filtered_transactions:
+                        transaction_data.append({
+                            "ID": trans['id'],
+                            "Ngày": trans['date'].split(" ")[0],
+                            "Giờ": trans['date'].split(" ")[1] if " " in trans['date'] else "",
+                            "Mã CP": trans['symbol'],
+                            "Loại": "🟢 MUA" if trans['type'] == "BUY" else "🔴 BÁN",
+                            "Số lượng": f"{trans['quantity']:,}",
+                            "Giá": f"{trans['price']:,.0f}",
+                            "Tổng giá trị": f"{trans['total_value']:,.0f}",
+                            "Phí": f"{trans['fee']:,.0f}" if trans.get('fee', 0) > 0 else "0",
+                            "Ghi chú": trans.get('note', '')[:30] + "..." if len(trans.get('note', '')) > 30 else trans.get('note', '')
+                        })
+                    
+                    df_transactions = pd.DataFrame(transaction_data)
+                    
+                    # Style the dataframe
+                    def style_transaction_type(val):
+                        if "🟢" in str(val):
+                            return 'color: #00ff88; font-weight: bold'
+                        elif "🔴" in str(val):
+                            return 'color: #ff4444; font-weight: bold'
+                        return ''
+                    
+                    styled_transactions = df_transactions.style.map(
+                        style_transaction_type, subset=['Loại']
+                    )
+                    
+                    st.dataframe(styled_transactions, use_container_width=True, hide_index=True)
+                    
+                    # Summary statistics
+                    st.markdown("#### 📊 Thống kê giao dịch")
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    total_transactions = len(filtered_transactions)
+                    buy_transactions = len([t for t in filtered_transactions if t['type'] == 'BUY'])
+                    sell_transactions = len([t for t in filtered_transactions if t['type'] == 'SELL'])
+                    total_fees = sum(t.get('fee', 0) for t in filtered_transactions)
+                    
+                    with col1:
+                        st.metric("📊 Tổng giao dịch", total_transactions)
+                    with col2:
+                        st.metric("🟢 Lệnh mua", buy_transactions)
+                    with col3:
+                        st.metric("🔴 Lệnh bán", sell_transactions)
+                    with col4:
+                        st.metric("💰 Tổng phí", f"{total_fees:,.0f} VND")
+                    
+                else:
+                    st.info("📝 Không có giao dịch nào phù hợp với bộ lọc")
+                    
+            else:
+                st.info("📝 Chưa có giao dịch nào trong danh mục này")
+        
+        with tab2:
+            st.markdown("#### ✏️ Sửa giao dịch")
+            
+            transaction_history = trading_history.get_transactions_history()
+            
+            if transaction_history:
+                # Select transaction to edit
+                transaction_options = []
+                for trans in transaction_history:
+                    date_short = trans['date'].split(" ")[0]
+                    transaction_options.append(
+                        f"#{trans['id']} - {trans['symbol']} - {trans['type']} - {date_short}"
+                    )
+                
+                selected_transaction = st.selectbox(
+                    "Chọn giao dịch cần sửa:",
+                    transaction_options,
+                    key="edit_transaction_select"
+                )
+                
+                if selected_transaction:
+                    # Get transaction ID
+                    trans_id = int(selected_transaction.split("#")[1].split(" ")[0])
+                    
+                    # Find the transaction
+                    current_trans = None
+                    for trans in transaction_history:
+                        if trans['id'] == trans_id:
+                            current_trans = trans
+                            break
+                    
+                    if current_trans:
+                        st.info(f"📋 Đang sửa giao dịch #{trans_id}")
+                        
+                        # Edit form
+                        with st.form("edit_transaction_form"):
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                new_symbol = st.text_input(
+                                    "Mã cổ phiếu", 
+                                    value=current_trans['symbol']
+                                ).upper()
+                                new_type = st.selectbox(
+                                    "Loại giao dịch", 
+                                    ["BUY", "SELL"],
+                                    index=0 if current_trans['type'] == "BUY" else 1
+                                )
+                                new_quantity = st.number_input(
+                                    "Số lượng", 
+                                    min_value=1, 
+                                    value=current_trans['quantity']
+                                )
+                            
+                            with col2:
+                                new_price = st.number_input(
+                                    "Giá (VND)", 
+                                    min_value=10, 
+                                    value=current_trans['price'],
+                                    step=1000
+                                )
+                                new_fee = st.number_input(
+                                    "Phí giao dịch (VND)", 
+                                    min_value=0, 
+                                    value=current_trans.get('fee', 0)
+                                )
+                                new_note = st.text_input(
+                                    "Ghi chú", 
+                                    value=current_trans.get('note', '')
+                                )
+                            
+                            # Date and time
+                            try:
+                                current_datetime = datetime.strptime(current_trans['date'], "%Y-%m-%d %H:%M:%S")
+                                new_date = st.date_input(
+                                    "Ngày giao dịch",
+                                    value=current_datetime.date()
+                                )
+                                new_time = st.time_input(
+                                    "Giờ giao dịch",
+                                    value=current_datetime.time()
+                                )
+                            except:
+                                new_date = st.date_input("Ngày giao dịch")
+                                new_time = st.time_input("Giờ giao dịch")
+                            
+                            submitted = st.form_submit_button("💾 Cập nhật giao dịch", type="primary")
+                            
+                            if submitted:
+                                # Validate inputs
+                                if not new_symbol or len(new_symbol) < 3:
+                                    st.error("❌ Mã cổ phiếu không hợp lệ")
+                                else:
+                                    # Delete old transaction and add new one
+                                    success = trading_history.delete_transaction(trans_id)
+                                    if success:
+                                        # Add updated transaction
+                                        new_datetime_str = f"{new_date} {new_time}"
+                                        new_trans_id = trading_history.add_transaction(
+                                            new_symbol, new_type, new_quantity, new_price,
+                                            new_datetime_str, new_fee, new_note
+                                        )
+                                        
+                                        if new_trans_id:
+                                            # Update portfolio stats
+                                            portfolio_manager._update_portfolio_stats(portfolio_id)
+                                            st.success(f"✅ Đã cập nhật giao dịch #{new_trans_id}")
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ Có lỗi khi thêm giao dịch mới")
+                                    else:
+                                        st.error("❌ Có lỗi khi xóa giao dịch cũ")
+            else:
+                st.info("📝 Chưa có giao dịch nào để sửa")
+        
+        with tab3:
+            st.markdown("#### 🗑️ Xóa giao dịch")
+            
+            transaction_history = trading_history.get_transactions_history()
+            
+            if transaction_history:
+                # Option to delete by transaction or by symbol
+                delete_mode = st.radio(
+                    "Chọn chế độ xóa:",
+                    ["🗑️ Xóa từng giao dịch", "🗑️ Xóa tất cả giao dịch của 1 mã CP"],
+                    key="delete_mode"
+                )
+                
+                if delete_mode == "🗑️ Xóa từng giao dịch":
+                    # Select transaction to delete
+                    transaction_options = []
+                    for trans in transaction_history:
+                        date_short = trans['date'].split(" ")[0]
+                        transaction_options.append(
+                            f"#{trans['id']} - {trans['symbol']} - {trans['type']} - {date_short} - {trans['quantity']:,} @ {trans['price']:,.0f}"
+                        )
+                    
+                    selected_transaction = st.selectbox(
+                        "Chọn giao dịch cần xóa:",
+                        transaction_options,
+                        key="delete_transaction_select"
+                    )
+                    
+                    if selected_transaction:
+                        # Get transaction ID
+                        trans_id = int(selected_transaction.split("#")[1].split(" ")[0])
+                        
+                        # Find the transaction for display
+                        current_trans = None
+                        for trans in transaction_history:
+                            if trans['id'] == trans_id:
+                                current_trans = trans
+                                break
+                        
+                        if current_trans:
+                            # Display transaction details
+                            st.warning("⚠️ **Thông tin giao dịch sẽ bị xóa:**")
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.write(f"**Mã CP**: {current_trans['symbol']}")
+                                st.write(f"**Loại**: {current_trans['type']}")
+                                st.write(f"**Số lượng**: {current_trans['quantity']:,}")
+                            
+                            with col2:
+                                st.write(f"**Giá**: {current_trans['price']:,.0f} VND")
+                                st.write(f"**Ngày**: {current_trans['date']}")
+                                st.write(f"**Tổng giá trị**: {current_trans['total_value']:,.0f} VND")
+                            
+                            # Confirmation
+                            confirm_delete = st.checkbox(
+                                f"Tôi xác nhận xóa giao dịch #{trans_id}",
+                                key="confirm_delete_transaction"
+                            )
+                            
+                            if confirm_delete and st.button("🗑️ XÓA GIAO DỊCH", type="primary"):
+                                success = trading_history.delete_transaction(trans_id)
+                                if success:
+                                    # Update portfolio stats
+                                    portfolio_manager._update_portfolio_stats(portfolio_id)
+                                    st.success(f"✅ Đã xóa giao dịch #{trans_id}")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Có lỗi khi xóa giao dịch")
+                
+                else:  # Delete all transactions of a symbol
+                    symbols_with_transactions = list(set([t['symbol'] for t in transaction_history]))
+                    
+                    selected_symbol = st.selectbox(
+                        "Chọn mã cổ phiếu để xóa TẤT CẢ giao dịch:",
+                        symbols_with_transactions,
+                        key="delete_symbol_select"
+                    )
+                    
+                    if selected_symbol:
+                        # Show transactions that will be deleted
+                        symbol_transactions = [t for t in transaction_history if t['symbol'] == selected_symbol]
+                        
+                        st.warning(f"⚠️ **Sẽ xóa {len(symbol_transactions)} giao dịch của {selected_symbol}:**")
+                        
+                        for trans in symbol_transactions:
+                            st.write(f"• #{trans['id']} - {trans['type']} - {trans['quantity']:,} @ {trans['price']:,.0f} - {trans['date']}")
+                        
+                        # Confirmation
+                        confirm_text = st.text_input(
+                            f"Gõ '{selected_symbol}' để xác nhận xóa tất cả giao dịch:",
+                            key="confirm_delete_symbol_text"
+                        )
+                        
+                        if confirm_text == selected_symbol and st.button("🗑️ XÓA TẤT CẢ", type="primary"):
+                            success = trading_history.clear_symbol_transactions(selected_symbol)
+                            if success:
+                                # Update portfolio stats
+                                portfolio_manager._update_portfolio_stats(portfolio_id)
+                                st.success(f"✅ Đã xóa tất cả giao dịch của {selected_symbol}")
+                                st.rerun()
+                            else:
+                                st.error("❌ Có lỗi khi xóa giao dịch")
+            else:
+                st.info("📝 Chưa có giao dịch nào để xóa")
+        
         # Auto refresh
         if auto_refresh:
             import time

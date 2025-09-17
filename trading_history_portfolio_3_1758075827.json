@@ -1,0 +1,84 @@
+{
+  "transactions": [
+    {
+      "id": 1,
+      "symbol": "VNM",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 66031,
+      "total_value": 6603100,
+      "fee": 0,
+      "net_value": 6603100,
+      "date": "2025-09-17 09:28:48",
+      "note": ""
+    },
+    {
+      "id": 2,
+      "symbol": "SAB",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 48045,
+      "total_value": 4804500,
+      "fee": 0,
+      "net_value": 4804500,
+      "date": "2025-09-17 09:28:57",
+      "note": ""
+    },
+    {
+      "id": 3,
+      "symbol": "NT2",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 22645,
+      "total_value": 2264500,
+      "fee": 0,
+      "net_value": 2264500,
+      "date": "2025-09-17 09:30:22",
+      "note": ""
+    }
+  ],
+  "holdings": {
+    "VNM": {
+      "total_shares": 100,
+      "total_cost": 6603100.0,
+      "avg_price": 66031.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 66031,
+          "fee": 0,
+          "date": "2025-09-17 09:28:48"
+        }
+      ]
+    },
+    "SAB": {
+      "total_shares": 100,
+      "total_cost": 4804500.0,
+      "avg_price": 48045.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 48045,
+          "fee": 0,
+          "date": "2025-09-17 09:28:57"
+        }
+      ]
+    },
+    "NT2": {
+      "total_shares": 100,
+      "total_cost": 2264500.0,
+      "avg_price": 22645.0,
+      "transactions": [
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 22645,
+          "fee": 0,
+          "date": "2025-09-17 09:30:22"
+        }
+      ]
+    }
+  }
+}

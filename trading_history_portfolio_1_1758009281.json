@@ -47,13 +47,37 @@
       "net_value": 2645200,
       "date": "2025-09-16 15:03:55",
       "note": ""
+    },
+    {
+      "id": 5,
+      "symbol": "CTG",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 52404,
+      "total_value": 5240400,
+      "fee": 0,
+      "net_value": 5240400,
+      "date": "2025-09-17 09:16:23",
+      "note": ""
+    },
+    {
+      "id": 6,
+      "symbol": "FPT",
+      "type": "BUY",
+      "quantity": 100,
+      "price": 105610,
+      "total_value": 10561000,
+      "fee": 0,
+      "net_value": 10561000,
+      "date": "2025-09-17 09:18:23",
+      "note": ""
     }
   ],
   "holdings": {
     "FPT": {
-      "total_shares": 100,
-      "total_cost": 10370700.0,
-      "avg_price": 103707.0,
+      "total_shares": 200,
+      "total_cost": 20931700.0,
+      "avg_price": 104658.5,
       "transactions": [
         {
           "type": "BUY",
@@ -61,13 +85,20 @@
           "price": 103707,
           "fee": 0,
           "date": "2025-09-16 15:03:37"
+        },
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 105610,
+          "fee": 0,
+          "date": "2025-09-17 09:18:23"
         }
       ]
     },
     "CTG": {
-      "total_shares": 100,
-      "total_cost": 5260500.0,
-      "avg_price": 52605.0,
+      "total_shares": 200,
+      "total_cost": 10500900.0,
+      "avg_price": 52504.5,
       "transactions": [
         {
           "type": "BUY",
@@ -75,6 +106,13 @@
           "price": 52605,
           "fee": 0,
           "date": "2025-09-16 15:03:43"
+        },
+        {
+          "type": "BUY",
+          "quantity": 100,
+          "price": 52404,
+          "fee": 0,
+          "date": "2025-09-17 09:16:23"
         }
       ]
     },
